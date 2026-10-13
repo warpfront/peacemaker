@@ -18,9 +18,9 @@
 //!     including the >63-chunk two-group prefix and forced col 0 S2MM4 / MM2S0 requeue (no finite task or repeat count lost);
 //!     omitting one prefix task queue write is detected.
 use std::cell::Cell;
-use pm_npu::dma::Direction;
-use pm_npu::kernels::{gemm_array::{self,ArrayDesign,Variant},gemm_core::{Control,Epilogue}};
-use pm_npu::sim::config::{parse_txn,Config,TxnOp};
+use peacemaker_npu::dma::Direction;
+use peacemaker_npu::kernels::{gemm_array::{self,ArrayDesign,Variant},gemm_core::{Control,Epilogue}};
+use peacemaker_npu::sim::config::{parse_txn,Config,TxnOp};
 
 const INT8:Epilogue=Epilogue::Int8{shift:12};
 const POISON:u8=0xa5;

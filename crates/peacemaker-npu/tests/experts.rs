@@ -9,8 +9,8 @@
 //! behind the ring with a late producer that publishes operands then `seq` through `submit_with`); the group stream is
 //! exactly one standalone full payload plus `E - 1` standalone lean payloads with only the shim DDR patches moved by
 //! the offsets, and the ring stream is the one-run empty ring with that payload cut in.
-use pm_npu::kernels::{experts::*, gemm_array::{self,ArrayDesign}, gemm_core::{Control,Epilogue}, ring::*};
-use pm_npu::sim::config::{parse_txn,Config,TxnOp};
+use peacemaker_npu::kernels::{experts::*, gemm_array::{self,ArrayDesign}, gemm_core::{Control,Epilogue}, ring::*};
+use peacemaker_npu::sim::config::{parse_txn,Config,TxnOp};
 
 const INT8:Epilogue=Epilogue::Int8{shift:12};
 const POISON:u8=0xa5;

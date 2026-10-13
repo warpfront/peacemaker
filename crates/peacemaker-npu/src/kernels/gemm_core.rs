@@ -7,8 +7,8 @@
 //! loads. Paired N blocks reuse A vectors; timed B loads stream through x11.
 //! The steady state issues one matrix op per bundle. Counts are simulator
 //! issue cycles, not measured NPU cycles; DMA/fetch/bank stalls are excluded.
-//! Offline gates: `cargo test -p pm-npu gemm_core` and
-//! `cargo test -p pm-npu gemm_core`. The aligned program is 14,048 bytes
+//! Offline gates: `cargo test -p peacemaker-npu gemm_core` and
+//! `cargo test -p peacemaker-npu gemm_core`. The aligned program is 14,048 bytes
 //! for kc=40/tiles=256; measured compute regions are 1,070 first-chunk and
 //! 1,067 later-chunk issue cycles, with a 1,008-cycle consecutive VMAC run.
 //! `program_variant` also exposes Serial (2,000 bytes, no ZOL/co-issue),
@@ -23,8 +23,8 @@
 //! the other's half through the South/North data-memory view, the 9-step per-chunk `PEER_FULL`/`PEER_EMPTY`
 //! lock protocol, and an optional int8 `VST.SRS.4x` C epilogue into `COUT_ADDR`. Lane order of the dm
 //! accumulator vs the four bm quarters (dm lane 16q+l = bm q lane l) is the simulator's modelling assumption;
-//! it is not yet confirmed on silicon. Gates: `cargo test -p pm-npu gemm_core` and the two-core
-//! `cargo test -p pm-npu --test gemm_core_pair`.
+//! it is not yet confirmed on silicon. Gates: `cargo test -p peacemaker-npu gemm_core` and the two-core
+//! `cargo test -p peacemaker-npu --test gemm_core_pair`.
 //!
 //! ## Pair data-memory layouts
 //! `--variant V8|V9 --ctl-probe layout=N` selects the maps in [`pair_layout`]; add `serial,` for Slow control.

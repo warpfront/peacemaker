@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 Kaden Schutt
 // hipfire — see LICENSE and NOTICE in the project root.
-use pm_npu::{cdo::Cmd,regs,kernels::gemm_i8::{design,cpu_reference}};
-use pm_npu::sim::config::{Config,TxnOp,parse_txn};
+use peacemaker_npu::{cdo::Cmd,regs,kernels::gemm_i8::{design,cpu_reference}};
+use peacemaker_npu::sim::config::{Config,TxnOp,parse_txn};
 fn matrices(m:usize,n:usize,k:usize)->(Vec<i8>,Vec<i8>) {
     let mut state=0xc001d00du32;let mut random=|| {state^=state<<13;state^=state>>17;state^=state<<5;state as i8};
     let mut a:Vec<_>=(0..m*k).map(|_|random()).collect();let mut b:Vec<_>=(0..k*n).map(|_|random()).collect();a[0]=-128;b[0]=-128;(a,b)
@@ -65,7 +65,7 @@ fn matrices(m:usize,n:usize,k:usize)->(Vec<i8>,Vec<i8>) {
 }
 #[test] fn malformed_cdo_payloads_return_errors() {
     for body in [vec![(255<<16)|0x105],vec![0x103],vec![(1<<16)|0x102,0],vec![(2<<16)|0x105,0]] {
-        let cdo=pm_npu::cdo::Cdo::from_body(body);
-        assert!(Config::from_pdi(&pm_npu::pdi::build(&cdo.to_words())).is_err());
+        let cdo=peacemaker_npu::cdo::Cdo::from_body(body);
+        assert!(Config::from_pdi(&peacemaker_npu::pdi::build(&cdo.to_words())).is_err());
     }
 }

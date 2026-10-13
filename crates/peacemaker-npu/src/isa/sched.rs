@@ -24,8 +24,8 @@
 //! exposed pipeline window. Indirect transfers terminate that path and are
 //! counted in coverage. It does not prove semantic initialization or lock values.
 //! Bundles are supplied in increasing PC order. Run the offline gates with
-//! `cargo test -p pm-npu sched_synthetic` and
-//! `cargo test -p pm-npu sched_vendor_core_elfs -- --nocapture`.
+//! `cargo test -p peacemaker-npu sched_synthetic` and
+//! `cargo test -p peacemaker-npu sched_vendor_core_elfs -- --nocapture`.
 //! The vendor gate skips only if its corpus directory is absent; it checks all
 //! decoded executable sections without opcode exclusions (NOP16 is inert).
 

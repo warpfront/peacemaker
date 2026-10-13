@@ -4,8 +4,8 @@
 //! Persistent-ring V9 in the whole-array simulator: late publication, slot wrap, patch-and-resubmit, negatives.
 //! The host side is a `Config::execute_with` producer called once per simulator wait tick (see `Producer`).
 use std::ops::Range;
-use pm_npu::kernels::{gemm_array::{self,ArrayDesign},gemm_core::{Control,Epilogue},ring::*};
-use pm_npu::sim::config::Config;
+use peacemaker_npu::kernels::{gemm_array::{self,ArrayDesign},gemm_core::{Control,Epilogue},ring::*};
+use peacemaker_npu::sim::config::Config;
 
 const INT8:Epilogue=Epilogue::Int8{shift:12};
 const POISON:u8=0xa5;
@@ -419,7 +419,7 @@ fn a_repeat_rounds(m:usize,n:usize,k:usize) {
 }
 #[test] fn a_repeat_ring_512x1280x128() {a_repeat_rounds(512,1280,128)}
 #[test] fn a_repeat_ring_1024x1280x64_two_m_waves() {a_repeat_rounds(1024,1280,64)}
-#[test] fn g80_ring_512x1280x128() {design_rounds(512,1280,128,"G80",&||pm_npu::kernels::gemm_g80::design_g80(512,1280,128,INT8,Control::Fast));}
+#[test] fn g80_ring_512x1280x128() {design_rounds(512,1280,128,"G80",&||peacemaker_npu::kernels::gemm_g80::design_g80(512,1280,128,INT8,Control::Fast));}
 
 /// G80 B-resident ring (`persistent_with(.., b_shared = true)`): every run shares one B; run 0 of round 0 fills it from
 /// DDR, every later run keeps it in the memtile. From run 2 on the host B is poison, so an exact C proves the lean
@@ -427,7 +427,7 @@ fn a_repeat_rounds(m:usize,n:usize,k:usize) {
 #[test] fn g80_b_resident_ring_512x1280x128() {
     let (m,n,k,nslots,s,rounds)=(512,1280,128,2,2,3);
     let layout=RingLayout {nslots};
-    let design=||pm_npu::kernels::gemm_g80::design_g80(m,n,k,INT8,Control::Fast);
+    let design=||peacemaker_npu::kernels::gemm_g80::design_g80(m,n,k,INT8,Control::Fast);
     let eager=design();
     let (ab,bb,cb)=(eager.args[0].bytes,eager.args[1].bytes,eager.args[2].bytes);
     let plans_of=|base:usize|->Vec<SlotPlan> {(0..s).map(|i|{let slot=(base+i)%nslots;SlotPlan {slot,a_off:(slot*ab) as u64,b_off:0,c_off:(slot*cb) as u64}}).collect()};

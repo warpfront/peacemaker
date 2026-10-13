@@ -9,8 +9,8 @@
 //! and core stepping order and the finite FIFO / lock back-pressure are fixed, so these tests exercise that one functional
 //! schedule (Fast and Slow core control), not arbitrary producer/consumer skew.
 use std::hash::Hasher;
-use pm_npu::kernels::{gemm_array::{self,ArrayDesign},gemm_core::{Control,Epilogue}};
-use pm_npu::sim::{config::Config,dma::Direction};
+use peacemaker_npu::kernels::{gemm_array::{self,ArrayDesign},gemm_core::{Control,Epilogue}};
+use peacemaker_npu::sim::{config::Config,dma::Direction};
 const INT8:Epilogue=Epilogue::Int8{shift:12};
 const CONTROLS:[Control;2]=[Control::Fast,Control::Slow];
 const SEEDS:[u32;3]=[0x12345678,0x98765432,0x2468ace1];

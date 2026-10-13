@@ -59,13 +59,13 @@
 //! loads and stores with `idx_imm`, `pstm_nrm_imm` and `pstm_nrm` addressing; `vshuffle` modes 0..=21; vector compare, select,
 //! add/sub/and/or, `vmax_lt`/`vmin_ge`, `vbcst.16/.32`, x/bm `vmov`; scalar `and`/`or`/`add`/`lshl`/`eqz`/`nez`
 //! (`lshl` amount is signed, negative = logical right shift; |n| >= 32 unsupported); `MOVX` into `crUPSMode`/`crUnpackSize`.
-//! Gates: `cargo test -p pm-npu npu_hello_64_words` and
-//! `cargo test -p pm-npu gemm_i8_27_shapes_dma_cpu_exact`.
-//! Smoke: dump `npu-hello`'s artifacts, then `cargo run -p pm-npu -- <core.bin>`;
-//! `cargo run -p pm-npu -- gemm 64` executes three streamed kernel jobs.
-//! Submitted-design smoke: `cargo run -p pm-npu -- gemm-design 64`.
+//! Gates: `cargo test -p peacemaker-npu npu_hello_64_words` and
+//! `cargo test -p peacemaker-npu gemm_i8_27_shapes_dma_cpu_exact`.
+//! Smoke: dump `npu-hello`'s artifacts, then `cargo run -p peacemaker-npu -- <core.bin>`;
+//! `cargo run -p peacemaker-npu -- gemm 64` executes three streamed kernel jobs.
+//! Submitted-design smoke: `cargo run -p peacemaker-npu -- gemm-design 64`.
 //! Exact hello gate: dump current `npu-hello` artifacts, then run
-//! `NPU_HELLO_ARTIFACT_DIR=<dir> cargo test -p pm-npu npu_hello_exact_pdi_insts_64_words`.
+//! `NPU_HELLO_ARTIFACT_DIR=<dir> cargo test -p peacemaker-npu npu_hello_exact_pdi_insts_64_words`.
 use crate::isa::Reg;
 pub mod dma;
 pub mod gemm;

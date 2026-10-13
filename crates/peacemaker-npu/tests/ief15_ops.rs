@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 Kaden Schutt
 // hipfire — see LICENSE and NOTICE in the project root.
-//! IEF15 N0 simulator ops (`local://ief15-spec.md` §4): every new instruction is assembled with the pm-npu
+//! IEF15 N0 simulator ops (`local://ief15-spec.md` §4): every new instruction is assembled with the peacemaker-npu
 //! encoder (`gen::ENCODINGS` + `bundle::encode_slot`/`pack_slots`), run on one `Tile` and compared with an
 //! independent lane model written here (i128 / Vec arithmetic, not the simulator's helpers).
-use pm_npu::isa::{self,bundle,gen::{self,Slot}};
-use pm_npu::sim::{decode::PreparedDecoder,Error,Step,Tile};
+use peacemaker_npu::isa::{self,bundle,gen::{self,Slot}};
+use peacemaker_npu::sim::{decode::PreparedDecoder,Error,Step,Tile};
 
 /// 16-bit nops after every instruction: longer than any itinerary latency used here (<= 7).
 const GAP:usize=8;

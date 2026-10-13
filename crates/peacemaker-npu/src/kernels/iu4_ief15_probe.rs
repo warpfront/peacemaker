@@ -6,8 +6,8 @@
 //! One core (column `col`, row 2, `gemm_i8`-style In/Out buffers through the shim and the memtile pass circuit)
 //! acquires its input buffer, executes a fixed sequence of probe cases on edge operands, stores every result
 //! register into the output buffer, releases it and halts. The expected output is *not* modelled here: it is the
-//! output of the exact PDI + TXN run in `pm_npu::sim::config::Config` (see `npu-gemm --ief15-probe` and
-//! `crates/pm-npu/tests/ief15_probe.rs`), so the silicon comparison is literally simulator vs silicon, bit for bit, and
+//! output of the exact PDI + TXN run in `peacemaker_npu::sim::config::Config` (see `npu-gemm --ief15-probe` and
+//! `crates/peacemaker-npu/tests/ief15_probe.rs`), so the silicon comparison is literally simulator vs silicon, bit for bit, and
 //! every mismatch is named by a row of [`CASES`] (case id, instruction, operands, output byte range).
 //!
 //! ## Program discipline

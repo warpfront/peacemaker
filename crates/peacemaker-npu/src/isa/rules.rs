@@ -25,7 +25,7 @@ pub enum Rule { BranchTarget, ZeroOverheadLoop, LockSpacing, DelaySlot, Decode }
 pub struct Violation { pub rule: Rule, pub pc: u64, pub detail: String }
 impl fmt::Display for Violation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "AIE2P rule {:?} violated at pc {:#x}: {} (see pm-npu isa::rules)", self.rule, self.pc, self.detail)
+        write!(f, "AIE2P rule {:?} violated at pc {:#x}: {} (see peacemaker-npu isa::rules)", self.rule, self.pc, self.detail)
     }
 }
 impl std::error::Error for Violation {}

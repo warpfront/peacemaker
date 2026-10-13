@@ -6,7 +6,7 @@
 //! npu commit 8261881 (before the levers-joint lever 3 descriptor experiments) and pins every default selection, so
 //! opt-in variants cannot silently change the production bytes. Regenerate with `GOLDEN_PRINT=1` only for an
 //! intentional default change, and say so in the commit.
-use pm_npu::kernels::{gemm_array, gemm_core::{self, Control, Epilogue, PairRole}};
+use peacemaker_npu::kernels::{gemm_array, gemm_core::{self, Control, Epilogue, PairRole}};
 
 /// FNV-1a 64 (stable across toolchains, unlike `DefaultHasher`).
 fn fnv(bytes: &[u8]) -> u64 {
@@ -95,7 +95,7 @@ fn g80_legacy_bytes_match_golden() {
     for m in [256, 8192] {
         for epi in [Epilogue::Int8 { shift: 12 }, Epilogue::I32] {
             for ctl in [Control::Fast, Control::Slow] {
-                let d = pm_npu::kernels::gemm_g80::design_g80(m, 1280, 2560, epi, ctl);
+                let d = peacemaker_npu::kernels::gemm_g80::design_g80(m, 1280, 2560, epi, ctl);
                 println!("G80 {m} {epi:?} {ctl:?} {:016x} {:016x}", fnv(&d.pdi), fnv(&d.insts));
                 assert_eq!((fnv(&d.pdi), fnv(&d.insts)), hashes[at], "G80 {m} {epi:?} {ctl:?} legacy bytes");
                 at += 1;
@@ -108,7 +108,7 @@ fn g80_legacy_bytes_match_golden() {
 fn g80_bf16_native_bytes_match_golden() {
     for (m, hashes) in [(256, (0x0f0957038d4177ef, 0x2cc33282387023c1)),
         (8192, (0x3140db0e2c87154f, 0x6dc4a91db3ec53db))] {
-        let d = pm_npu::kernels::gemm_g80::design_g80(m, 1280, 2560, Epilogue::Bf16, Control::Fast);
+        let d = peacemaker_npu::kernels::gemm_g80::design_g80(m, 1280, 2560, Epilogue::Bf16, Control::Fast);
         assert_eq!((fnv(&d.pdi), fnv(&d.insts)), hashes, "G80 BF16 native {m} bytes changed");
     }
 }
@@ -118,7 +118,7 @@ fn g80_bf16_native_bytes_match_golden() {
 /// bytes of the out program cannot drift silently. Tuples are `(m, layout, pdi, txn, lower, upper)`.
 #[test]
 fn g80_n512_out_bytes_match_golden() {
-    use pm_npu::kernels::gemm_g80::Bf16Layout;
+    use peacemaker_npu::kernels::gemm_g80::Bf16Layout;
     let rowmajor = Bf16Layout::RowMajor { pitch_elems: 2560, col0_elems: 0 };
     let pins: [(usize, Bf16Layout, [u64; 4]); 4] = [
         (512, Bf16Layout::NativeTiles, [0xc928b89c58012467, 0x4291c32493ddc1b0, 0x67f57222824ad41a, 0x1ce87df7f313cb6a]),
@@ -128,7 +128,7 @@ fn g80_n512_out_bytes_match_golden() {
     ];
     let mut bad = Vec::new();
     for (m, layout, want) in pins {
-        let d = pm_npu::kernels::gemm_g80_n512::design_g80_n512_layout(m, 512, 6144, Epilogue::Bf16, Control::Fast, layout);
+        let d = peacemaker_npu::kernels::gemm_g80_n512::design_g80_n512_layout(m, 512, 6144, Epilogue::Bf16, Control::Fast, layout);
         let got = [fnv(&d.pdi), fnv(&d.insts), fnv(d.core_program()), fnv(d.core_program_upper().unwrap())];
         println!("N512 {m} {layout:?} {:016x} {:016x} {:016x} {:016x}", got[0], got[1], got[2], got[3]);
         println!("N512 {m} sizes: pdi {} B, txn {} B, lean {} B, lower {} B, upper {} B", d.pdi.len(), d.insts.len(),

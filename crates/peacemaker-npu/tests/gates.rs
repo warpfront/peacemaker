@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 Kaden Schutt
 // hipfire — see LICENSE and NOTICE in the project root.
-use pm_npu::{isa::*,dma as bd};
-use pm_npu::sim::{Tile,decode::PreparedDecoder,Step,Error,dma::*};
+use peacemaker_npu::{isa::*,dma as bd};
+use peacemaker_npu::sim::{Tile,decode::PreparedDecoder,Step,Error,dma::*};
 fn hello_program()->Vec<u8> {
     let mut p=Program::new();
     p.push(movxm(P(0),0x78000)).push(movxm(R(0),0xc0de0000)).push(mova(R(1),1)).nops(4);
@@ -74,7 +74,7 @@ fn vstore(quarter:u64)->Inst {Inst::St((2<<17)|(1<<13)|(3<<11)|(quarter<<6)|0b00
 }
 
 #[test] fn gemm_i8_27_shapes_dma_cpu_exact() {
-    use pm_npu::kernels::gemm_i8::{pack_job,cpu_reference};
+    use peacemaker_npu::kernels::gemm_i8::{pack_job,cpu_reference};
     let mut state=0x12345678u32;
     let mut random=|| {state^=state<<13;state^=state>>17;state^=state<<5;state as i8};
     let mut shapes=0;
@@ -84,9 +84,9 @@ fn vstore(quarter:u64)->Inst {Inst::St((2<<17)|(1<<13)|(3<<11)|(quarter<<6)|0b00
         let expected=cpu_reference(&a,&b,m,n,k);
         let coordinates:Vec<_>=(0..m/8).flat_map(|mb|(0..n/8).map(move |nb|(mb,nb))).collect();
         let mut got=vec![0i32;m*n];
-        for batch in coordinates.chunks(pm_npu::kernels::gemm_i8::MAX_JOBS) {
+        for batch in coordinates.chunks(peacemaker_npu::kernels::gemm_i8::MAX_JOBS) {
             let packed:Vec<_>=batch.iter().map(|&(mb,nb)|pack_job(&a,&b,m,n,k,mb,nb)).collect();
-            let output=pm_npu::sim::gemm::simulate(k,&packed).unwrap();
+            let output=peacemaker_npu::sim::gemm::simulate(k,&packed).unwrap();
             for (job,&(mb,nb)) in batch.iter().enumerate() {for r in 0..8 {for c in 0..8 {
                 let off=job*256+(r*8+c)*4;
                 got[(mb*8+r)*n+nb*8+c]=i32::from_le_bytes(output[off..off+4].try_into().unwrap());

@@ -24,7 +24,7 @@ pub enum TxnOp {
     MaskPoll(u32,u32,u32), DdrPatch {address:u32,arg:usize,plus:u64},
     Sync {col:u8,row:u8,direction:u8,channel:u8,cols:u8,rows:u8},
 }
-/// Checked parser for the firmware v0.1 transaction operations emitted by pm-npu.
+/// Checked parser for the firmware v0.1 transaction operations emitted by peacemaker-npu.
 pub fn parse_txn(bytes:&[u8])->Result<Vec<TxnOp>> {
     if bytes.len()<16 || bytes.len()%4!=0 || bytes[..3]!=[0,1,4] || bytes[3..6]!=[6,8,1] {return Err("unsupported TXN header".into())}
     let words:Vec<u32>=bytes.chunks_exact(4).map(|b|u32::from_le_bytes(b.try_into().unwrap())).collect();
@@ -48,7 +48,7 @@ pub fn parse_txn(bytes:&[u8])->Result<Vec<TxnOp>> {
     if index!=words.len() {return Err("trailing TXN operations".into())}
     Ok(ops)
 }
-// Guard pm-npu's inspection parser against truncated command-specific payloads.
+// Guard peacemaker-npu's inspection parser against truncated command-specific payloads.
 fn validate_cdo(words:&[u32])->Result<()> {
     if words.len()<5 || words[..3]!=[4,0x004f4443,0x200] {return Err("invalid CDO header".into())}
     let body=words.get(5..5usize.checked_add(words[3] as usize).ok_or("CDO length overflow")?).ok_or("truncated CDO body")?;

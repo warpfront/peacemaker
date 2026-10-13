@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 Kaden Schutt
 // hipfire — see LICENSE and NOTICE in the project root.
-use pm_npu::kernels::{gemm_core as core,gemm_i8};
-use pm_npu::isa::{self,Inst,Program,Reg};
-use pm_npu::sim::{decode::PreparedDecoder,Decoder,Op,Operations,Step,Tile};
+use peacemaker_npu::kernels::{gemm_core as core,gemm_i8};
+use peacemaker_npu::isa::{self,Inst,Program,Reg};
+use peacemaker_npu::sim::{decode::PreparedDecoder,Decoder,Op,Operations,Step,Tile};
 
 fn random(state:&mut u64)->i8 {
     *state^=*state<<13;*state^=*state>>7;*state^=*state<<17;

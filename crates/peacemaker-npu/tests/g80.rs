@@ -30,12 +30,12 @@
 //! (`pattern_b_*`), at one and two M waves, reusing one `Config` with the parity pattern flipped between submits. A
 //! negative perturbed ready-credit run is not accessible for the same reason.
 use std::{hash::Hasher,ops::Range,panic::{catch_unwind,AssertUnwindSafe}};
-use pm_npu::dma::Direction as DmaDirection;
-use pm_npu::kernels::{gemm_array::ArrayDesign,gemm_core::{Control,Epilogue,Probe},gemm_g80::design_g80,gemm_i8::{cpu_reference,ArgKind,ArgSpec}};
-use pm_npu::txn::Txn;
-use pm_npu::kernels::{experts::{grouped,grouped_all_full,ExpertPlan,GroupedDesign},ring::{RingLayout,SENTINEL}};
+use peacemaker_npu::dma::Direction as DmaDirection;
+use peacemaker_npu::kernels::{gemm_array::ArrayDesign,gemm_core::{Control,Epilogue,Probe},gemm_g80::design_g80,gemm_i8::{cpu_reference,ArgKind,ArgSpec}};
+use peacemaker_npu::txn::Txn;
+use peacemaker_npu::kernels::{experts::{grouped,grouped_all_full,ExpertPlan,GroupedDesign},ring::{RingLayout,SENTINEL}};
 use std::cell::Cell;
-use pm_npu::sim::{config::{parse_txn,Config,TxnOp},dma::Direction};
+use peacemaker_npu::sim::{config::{parse_txn,Config,TxnOp},dma::Direction};
 
 const N:usize=1280;
 const WAVE_M:usize=256;
@@ -610,7 +610,7 @@ fn grouped_ring_case(ms:&[usize],k:usize,ctl:Control,layout:RingLayout,slot:usiz
 /// are exchanged to `[odd, even]` so every byte still lands in its original region. The result must stay CPU-exact.
 const B_HALF:usize=5120;
 const BD_FILL:[u32;2]=[4,5];
-fn mem_bd_addr(col:u32,id:u32)->u32 {pm_npu::regs::tile(col,1,0xa0000+id*0x20)}
+fn mem_bd_addr(col:u32,id:u32)->u32 {peacemaker_npu::regs::tile(col,1,0xa0000+id*0x20)}
 /// `d.insts` with the B fill descriptors of all 8 columns exchanged (panics if a column's BD4 / BD5 rewrite is not found).
 fn reverse_fill_ops(d:&ArrayDesign)->Vec<TxnOp> {
     let mut ops=parse_txn(&d.insts).unwrap();
@@ -736,7 +736,7 @@ fn ring_poll_reset_omission_detected(ms:&[usize],k:usize,ctl:Control,layout:Ring
     let (res,args,ticks)=run(&ops,None);res.unwrap_or_else(|e|panic!("{what}: control ring group failed: {e}"));
     check_group_g(&g,&plans,&ex,&args,Some(layout),&format!("{what} control"));
     let drain=ops.iter().position(|o|matches!(o,TxnOp::MaskPoll(_,_,v) if *v==SENTINEL)).expect("ring drain poll");
-    let ctrl=pm_npu::regs::tile(0,1,0xa0600+4*8);let mut removed=0usize;
+    let ctrl=peacemaker_npu::regs::tile(0,1,0xa0600+4*8);let mut removed=0usize;
     let kept:Vec<TxnOp>=ops.iter().enumerate().filter(|(i,o)|{let hit=*i>drain&&matches!(o,TxnOp::MaskWrite(a,..) if *a==ctrl);if hit {removed+=1}!hit}).map(|(_,o)|o.clone()).collect();
     assert!(removed>0,"{what}: no col 0 S2MM4 CTRL write in the group body to omit");
     let (res,args,_)=run(&kept,Some(ticks*2+4096));
@@ -999,7 +999,7 @@ fn assert_i32_descriptors(m:usize,k:usize,ctl:Control) {
             assert_eq!(PROD_BD[r][0]>=24,r%2==1,"{w}: producer bank");assert_eq!(DRAIN_BD0[g]>=24,DRAIN_CH[g]%2==1,"{w}: drain bank");
             let local=(empty.0-64,full.0-64);
             for (id,want) in [(local.0,1u32),(local.1,0)] {
-                let at=pm_npu::regs::tile(col,1,0xc0000+id*0x10);
+                let at=peacemaker_npu::regs::tile(col,1,0xc0000+id*0x10);
                 let vals:Vec<u32>=ops.iter().filter_map(|o|match *o {TxnOp::Write(a,v) if a==at=>Some(v),_=>None}).collect();
                 assert_eq!(vals.last().copied(),Some(want),"{w}: memtile lock {id} initial value (writes {vals:?})");
             }
@@ -1013,7 +1013,7 @@ fn assert_i32_descriptors(m:usize,k:usize,ctl:Control) {
         }
         let mut ids:Vec<u32>=pairs.iter().flat_map(|p|[p.0,p.1]).collect();ids.sort();ids.dedup();assert_eq!(ids.len(),8,"{what} col {col}: four distinct lock pairs");
         for id in 16..24u32 {
-            let at=pm_npu::regs::tile(col,1,0xc0000+id*0x10);
+            let at=peacemaker_npu::regs::tile(col,1,0xc0000+id*0x10);
             assert!(ops.iter().all(|o|!matches!(o,TxnOp::Write(a,_) if *a==at)),"{what} col {col}: memtile lock {id} (the removed second slot) must not be initialised");
         }
     }
@@ -1262,7 +1262,7 @@ fn bf16_scales(count: usize, seed: usize) -> Vec<(u16, i16)> {
 fn submit_bf16(sim: &mut Config, d: &ArrayDesign, insts: &[u8], m: usize, k: usize,
     a: &[i8], b: &[i8], ds: &[(u16, i16)], ss: &[(u16, i16)]) -> usize
 {
-    use pm_npu::kernels::{gemm_g80::{pack_a_bf16, pack_b_bf16}, w8a8_epi::bf16_direct};
+    use peacemaker_npu::kernels::{gemm_g80::{pack_a_bf16, pack_b_bf16}, w8a8_epi::bf16_direct};
     let ah = pack_a_bf16(d, a, ds);
     let bh = pack_b_bf16(d, b, ss);
     let before_inputs = [signature(&ah), signature(&bh)];
@@ -1374,7 +1374,7 @@ fn g80_bf16_k2560_signed_extremes_and_modelled_cycles() {
     eprintln!("MODELLED wave cycles int8={ticks_i8} I32={ticks_i32} BF16={ticks_bf}; \
         scaled 33.1 TOPS: int8=33.1 I32={:.4} BF16={:.4}; arithmetic group={} cycles/32",
         33.1 * ticks_i8 as f64 / ticks_i32 as f64, 33.1 * ticks_i8 as f64 / ticks_bf as f64,
-        pm_npu::kernels::gemm_core_g80::bf16_group_cycles());
+        peacemaker_npu::kernels::gemm_core_g80::bf16_group_cycles());
 }
 
 #[test]
@@ -1405,13 +1405,13 @@ fn g80_bf16_descriptor_bounds_and_8192_host_bytes() {
 
 #[test]
 fn g80_bf16_pack_near_i26_j56_and_random_grid() {
-    use pm_npu::kernels::{gemm_core_g80::bf16_pack_debug_program, w8a8_epi::bf16_direct};
+    use peacemaker_npu::kernels::{gemm_core_g80::bf16_pack_debug_program, w8a8_epi::bf16_direct};
     let (program, offsets) = bf16_pack_debug_program();
-    let decoder = pm_npu::sim::decode::PreparedDecoder::new(&program).unwrap();
+    let decoder = peacemaker_npu::sim::decode::PreparedDecoder::new(&program).unwrap();
     let mut state = 0x4781deabu32;
     let mut next = || { state ^= state << 13; state ^= state >> 17; state ^= state << 5; state };
     for iteration in 0..128 {
-        let mut tile = pm_npu::sim::Tile::new(program.clone()).unwrap();
+        let mut tile = peacemaker_npu::sim::Tile::new(program.clone()).unwrap();
         let mut wants = [0u16; 32];
         for lane in 0..32 {
             let i = if lane < 2 { if lane == 0 { (1 << 26) - 1 } else { 1 - (1 << 26) } }
@@ -1428,7 +1428,7 @@ fn g80_bf16_pack_near_i26_j56_and_random_grid() {
             }
         }
         let result = tile.run(&decoder, 100_000);
-        assert!(matches!(result, Ok(pm_npu::sim::Step::Done)), "{result:?}");
+        assert!(matches!(result, Ok(peacemaker_npu::sim::Step::Done)), "{result:?}");
         for (lane, want) in wants.into_iter().enumerate() {
             let off = 0x5000 + 2 * lane;
             let got = u16::from_le_bytes(tile.memory[off..off + 2].try_into().unwrap());
@@ -1452,8 +1452,8 @@ fn g80_bf16_multiple_k2560_waves_reuse() {
 
 #[test]
 fn g80_bf16_rowmajor_poison_traffic_cycles_and_reuse() {
-    use pm_npu::kernels::gemm_g80::{design_g80_bf16_layout, Bf16Layout, pack_a_bf16, pack_b_bf16};
-    use pm_npu::kernels::w8a8_epi::bf16_direct;
+    use peacemaker_npu::kernels::gemm_g80::{design_g80_bf16_layout, Bf16Layout, pack_a_bf16, pack_b_bf16};
+    use peacemaker_npu::kernels::w8a8_epi::bf16_direct;
     for (m, k, pitch, col0) in [14080, 16640].into_iter().flat_map(|pitch|
         [200, 300, 1545, 1801].map(move |m| (m, 64, pitch, 1280)))
         .chain([(200, 2560, 14080, 2560), (300, 2560, 2624, 32)]) {
@@ -1502,8 +1502,8 @@ fn g80_bf16_rowmajor_poison_traffic_cycles_and_reuse() {
 
 #[test]
 fn g80_bf16_rowmajor_adjacent_panels_one_design_base_offset() {
-    use pm_npu::kernels::gemm_g80::{design_g80_bf16_layout, Bf16Layout, pack_a_bf16, pack_b_bf16};
-    use pm_npu::kernels::w8a8_epi::bf16_direct;
+    use peacemaker_npu::kernels::gemm_g80::{design_g80_bf16_layout, Bf16Layout, pack_a_bf16, pack_b_bf16};
+    use peacemaker_npu::kernels::w8a8_epi::bf16_direct;
     for pitch in [14080, 16640] {
         let (m, k, col0) = (2041, 64, 32);
         let d = design_g80_bf16_layout(m, N, k, Epilogue::Bf16, Control::Fast,
@@ -1541,7 +1541,7 @@ fn g80_bf16_rowmajor_adjacent_panels_one_design_base_offset() {
 
 #[test]
 fn g80_bf16_rowmajor_builder_bounds() {
-    use pm_npu::kernels::gemm_g80::build_panel_program_rowmajor;
+    use peacemaker_npu::kernels::gemm_g80::build_panel_program_rowmajor;
     for (rows, pitch, col0) in [(0, 16640, 0), (65537, 16640, 0),
         (256, 1278, 0), (256, 16641, 0), (256, 16640, 1), (256, 16640, 16640)] {
         assert!(build_panel_program_rowmajor(rows, pitch, col0).is_err());
@@ -1558,8 +1558,8 @@ fn g80_bf16_rowmajor_builder_bounds() {
 /// exact dot oracle while varying every token/feature scale and wave's data.
 #[test]
 fn g80_bf16_rowmajor_256_waves_both_pitches() {
-    use pm_npu::kernels::gemm_g80::{design_g80_bf16_layout, Bf16Layout, pack_a_bf16, pack_b_bf16};
-    use pm_npu::kernels::w8a8_epi::bf16_direct;
+    use peacemaker_npu::kernels::gemm_g80::{design_g80_bf16_layout, Bf16Layout, pack_a_bf16, pack_b_bf16};
+    use peacemaker_npu::kernels::w8a8_epi::bf16_direct;
     let (m, k, col0) = (65529, 64, 1280);
     let av = |row: usize| (row % 127) as i32 - 63;
     let bv = |col: usize| (col % 31) as i32 - 15;
@@ -1606,7 +1606,7 @@ fn g80_bf16_rowmajor_256_waves_both_pitches() {
 
 #[test]
 fn g80_bf16_rowmajor_batch_descriptor_budget_and_instruction_counts() {
-    use pm_npu::kernels::gemm_g80::{design_g80_bf16_layout, Bf16Layout};
+    use peacemaker_npu::kernels::gemm_g80::{design_g80_bf16_layout, Bf16Layout};
     let ids = [[1, 4, 6, 7, 8, 9, 10], [3, 5, 11, 12, 13, 14, 15]];
     for pitch in [14080, 16640] {
         for waves in [1usize, 2, 7, 8, 32, 256] {
@@ -1672,7 +1672,7 @@ fn g80_bf16_rowmajor_batch_descriptor_budget_and_instruction_counts() {
 // ---------------------------------------------------------------- N512 / K6144 direct BF16 (gate K0)
 // `gemm_g80_n512`: the V8 wave (512 rows x 512 columns, 128x64 core tiles, B panel resident) with the integer BF16 epilogue.
 // The CPU twin is `bf16_direct` over the exact int32 whole-K sum; golden bytes means the complete padded arena.
-use pm_npu::kernels::{gemm_g80::Bf16Layout as OutLayout, gemm_g80_n512::{build_panel_program_out, design_g80_n512_layout,
+use peacemaker_npu::kernels::{gemm_g80::Bf16Layout as OutLayout, gemm_g80_n512::{build_panel_program_out, design_g80_n512_layout,
     pack_a_bf16 as out_pack_a, pack_b_bf16 as out_pack_b}, w8a8_epi::bf16_direct as out_twin};
 const ON:usize=512;
 const OUT_WAVE_M:usize=512;

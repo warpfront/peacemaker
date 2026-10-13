@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 Kaden Schutt
 // hipfire — see LICENSE and NOTICE in the project root.
-use pm_npu::{cdo::Cdo,dma::{Bd,BdLocks,Dim,Iteration,Location,ShimAxi,Task,Direction as D,lock_write},pdi,route::{Circuit,PacketMaster,PacketRule,Port,ShimDma as RouteDma}};
-use pm_npu::sim::{Error,Tile,Step,dma::{TileDma,ShimDma,Fifo,Direction},config::{Config,TxnOp}};
+use peacemaker_npu::{cdo::Cdo,dma::{Bd,BdLocks,Dim,Iteration,Location,ShimAxi,Task,Direction as D,lock_write},pdi,route::{Circuit,PacketMaster,PacketRule,Port,ShimDma as RouteDma}};
+use peacemaker_npu::sim::{Error,Tile,Step,dma::{TileDma,ShimDma,Fifo,Direction},config::{Config,TxnOp}};
 fn words(values:&[u32])->Vec<u8> {values.iter().flat_map(|v|v.to_le_bytes()).collect()}
 fn circuit(cdo:&mut Cdo,tile:Location,slave:Port,master:Port) {Circuit {tile,slave,master}.emit_cdo(cdo)}
 fn task(direction:D,channel:u32,bd:u32,repeat:u32,token:bool)->Task {Task {direction,channel,bd,repeat,issue_token:token}}
@@ -109,7 +109,7 @@ fn unsupported_register_modes_fail_explicitly() {
         (m.address(0xa060c),0),(m.address(0xa0600),1),(0x1d200,2),
         (c.address(0x1de04),1<<31),(m.address(0xb0050),1<<31),
         (m.address(0xb0000),3<<30),(c.address(0x3f010),1<<31)] {
-        assert!(Config::new().load_cdo(&[pm_npu::cdo::Cmd::Write(addr,value)]).is_err(),"accepted unsupported {addr:#x}={value:#x}");
+        assert!(Config::new().load_cdo(&[peacemaker_npu::cdo::Cmd::Write(addr,value)]).is_err(),"accepted unsupported {addr:#x}={value:#x}");
     }
 }
 

@@ -105,7 +105,7 @@
 //! resets the memtile A / B rings and the core A / B rings and returns the pong `A_EMPTY` / `B_EMPTY` credits, `W` odd
 //! repairs the C rings and drains.
 //!
-//! Prefix verification in `crates/pm-npu/tests/lean.rs` compares three changing-operand lean submits and full/lean
+//! Prefix verification in `crates/peacemaker-npu/tests/lean.rs` compares three changing-operand lean submits and full/lean
 //! interleaves to both the CPU reference and a fresh full-TXN configuration, including every retained snapshot field.
 //! It covers one/two groups and `MW = 1`/`MW > 1`, forced channel resets, and missing finite-task requeues.
 //! For Fast int8 (`shift = 12`), V10 prefix down `4096x2560x640` is 8,816 B lean versus 49,136 B full;

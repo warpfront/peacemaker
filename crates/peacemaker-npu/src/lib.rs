@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 Kaden Schutt
 // hipfire — see LICENSE and NOTICE in the project root.
-//! pm-npu: build AIE2P (XDNA2, Strix / Strix Halo NPU) programs without the vendor toolchain.
+//! peacemaker-npu: build AIE2P (XDNA2, Strix / Strix Halo NPU) programs without the vendor toolchain.
 //!
 //! - [`isa`]: core VLIW instruction encoder, transcribed from llvm-aie's AIE2P TableGen
 //!   (`AIE2PGenInstrInfo.td`, `AIE2PCompositeFormats.td`, `AIE2PMCCodeEmitterGen.inc`).

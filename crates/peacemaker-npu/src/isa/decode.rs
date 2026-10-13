@@ -5,8 +5,8 @@
 //! `decode` consumes one bundle at the supplied PC. Operand kinds, access direction,
 //! and itinerary identifiers remain available for schedulers and CPU simulators.
 //! `encode` reconstructs slot operands and preserves reserved/don't-care bits.
-//! The offline CLI accepts ELF32 cores: `cargo run -p pm-npu --bin pm-npu-objdump -- CORE.elf`.
-//! Oracle gate: `AIE2P_OBJDUMP=/path/to/llvm-objdump cargo test -p pm-npu vendor_decode_oracle_roundtrip`.
+//! The offline CLI accepts ELF32 cores: `cargo run -p peacemaker-npu --bin peacemaker-npu-objdump -- CORE.elf`.
+//! Oracle gate: `AIE2P_OBJDUMP=/path/to/llvm-objdump cargo test -p peacemaker-npu vendor_decode_oracle_roundtrip`.
 use super::{bundle, gen};
 use std::fmt;
 

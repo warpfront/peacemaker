@@ -14,7 +14,7 @@
 //! then `emit_cdo` for boot configuration or `emit_txn` for firmware commands.
 //! [`Task`] enqueues a chain; enable compute/memtile channels separately after
 //! queueing via `enable_cdo` / `enable_txn`. Shim queues start the task directly.
-//! Offline oracle gate: `cargo test -p pm-npu reproduces_vendor_whole_array`.
+//! Offline oracle gate: `cargo test -p peacemaker-npu reproduces_vendor_whole_array`.
 
 /// Lock action on a BD: acquire `acq_id` with signed `acq_value` (AIE-ML semantics: negative =
 /// wait until value >= -v, then add v), release `rel_id` by signed `rel_value`.

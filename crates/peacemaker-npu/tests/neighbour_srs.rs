@@ -2,9 +2,9 @@
 // Copyright (c) 2026 Kaden Schutt
 // hipfire — see LICENSE and NOTICE in the project root.
 //! V8 simulator features: neighbour data memory/lock views and `vst.srs.4x` int8 SRS stores.
-//! Instruction slots are encoded from the `pm-npu` `gen.rs` encodings (llvm-aie AIE2P TableGen).
-use pm_npu::{cdo::Cmd,regs,isa::{self,Inst,Program,Reg::{M,P,R}}};
-use pm_npu::sim::{config::{Config,TxnOp},decode::PreparedDecoder,srs_lane,Error,Neighbour,Neighbours,Step,Tile};
+//! Instruction slots are encoded from the `peacemaker-npu` `gen.rs` encodings (llvm-aie AIE2P TableGen).
+use peacemaker_npu::{cdo::Cmd,regs,isa::{self,Inst,Program,Reg::{M,P,R}}};
+use peacemaker_npu::sim::{config::{Config,TxnOp},decode::PreparedDecoder,srs_lane,Error,Neighbour,Neighbours,Step,Tile};
 
 const NOPS:usize=16;
 fn movxm_s(n:u64,i:u32)->Inst {

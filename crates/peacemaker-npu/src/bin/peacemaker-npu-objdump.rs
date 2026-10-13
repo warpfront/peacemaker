@@ -2,13 +2,13 @@
 // Copyright (c) 2026 Kaden Schutt
 // hipfire — see LICENSE and NOTICE in the project root.
 //! Offline AIE2P ELF disassembler; no vendor runtime or hardware access.
-use pm_npu::isa::decode::{decode, executable_sections};
+use peacemaker_npu::isa::decode::{decode, executable_sections};
 fn main() {
-    if let Err(e) = run() { eprintln!("pm-npu-objdump: {e}"); std::process::exit(1); }
+    if let Err(e) = run() { eprintln!("peacemaker-npu-objdump: {e}"); std::process::exit(1); }
 }
 fn run() -> Result<(),Box<dyn std::error::Error>> {
     let paths:Vec<_> = std::env::args_os().skip(1).collect();
-    if paths.is_empty() { return Err("usage: pm-npu-objdump CORE.elf [...]".into()); }
+    if paths.is_empty() { return Err("usage: peacemaker-npu-objdump CORE.elf [...]".into()); }
     for path in paths {
         let bytes = std::fs::read(&path)?;
         println!("{}:",std::path::Path::new(&path).display());

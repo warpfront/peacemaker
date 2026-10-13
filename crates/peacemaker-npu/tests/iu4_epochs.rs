@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 Kaden Schutt
 // hipfire — see LICENSE and NOTICE in the project root.
-//! The epoch-batched V8 deployment ([`pm_npu::kernels::iu4::EpochGemm`]) run on the exact PDI/TXN simulator returns
+//! The epoch-batched V8 deployment ([`peacemaker_npu::kernels::iu4::EpochGemm`]) run on the exact PDI/TXN simulator returns
 //! hipfire's IU4 per-K128-epoch int32 partials bit for bit, and the GPU fold of those partials equals the fold of
 //! the CPU reference partials bit for bit.
-use pm_npu::kernels::gemm_core::Control;
-use pm_npu::kernels::iu4::{self, Acts, EpochGemm, Weights};
-use pm_npu::sim::config::Config;
+use peacemaker_npu::kernels::gemm_core::Control;
+use peacemaker_npu::kernels::iu4::{self, Acts, EpochGemm, Weights};
+use peacemaker_npu::sim::config::Config;
 
 fn epoch_shape(tokens: usize, rows: usize, k: usize, ctl: Control, seed: u64) {
     let (wb, xb) = iu4::random_operands(tokens, rows, k, seed, true);

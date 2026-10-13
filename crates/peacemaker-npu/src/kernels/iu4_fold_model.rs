@@ -4,7 +4,7 @@
 //! Per output and K128 epoch the GPU does two IEEE binary32 operations (`iu4`): `t = RN(f32(sc) * d)` and
 //! `sum = fma(t, f32(C), sum)`. Both models below compute exactly that, element by element, using only lane-wise
 //! primitives that exist on AIE2P, and charge every primitive to the VLIW slot that issues it
-//! (`crates/pm-npu/src/isa/gen.rs` encodings):
+//! (`crates/peacemaker-npu/src/isa/gen.rs` encodings):
 //! * **Mv** (one per bundle, 512-bit = 16 x i32 lanes): `vadd.32`, `vsub.32`, `vband`, `vbor`, `vlt/vge/veqz.32`
 //!   (mask), `vsel.32`, `vabs_gtz.32`, `vmax/vmin`, `vmov` (vector <-> accumulator bits), `vups` (vector -> accumulator
 //!   with a scalar left shift), `vconv.fp32.bf16`. There is **no** lane-variable shift, no vector clz and no xor.

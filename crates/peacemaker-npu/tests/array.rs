@@ -2,8 +2,8 @@
 // Copyright (c) 2026 Kaden Schutt
 // hipfire — see LICENSE and NOTICE in the project root.
 use std::hash::Hasher;
-use pm_npu::kernels::{gemm_array,gemm_core::CoreVariant,gemm_i8::{self,cpu_reference}};
-use pm_npu::sim::{config::Config,dma::Direction};
+use peacemaker_npu::kernels::{gemm_array,gemm_core::CoreVariant,gemm_i8::{self,cpu_reference}};
+use peacemaker_npu::sim::{config::Config,dma::Direction};
 fn matrices(m:usize,n:usize,k:usize,seed:u32)->(Vec<i8>,Vec<i8>) {
     let mut state=seed;let mut random=|| {state^=state<<13;state^=state>>17;state^=state<<5;state as i8};
     let mut a:Vec<_>=(0..m*k).map(|_|random()).collect();let mut b:Vec<_>=(0..k*n).map(|_|random()).collect();a[0]=-128;b[0]=-128;(a,b)
@@ -56,7 +56,7 @@ fn clock_probe_core_pattern_and_busy_scale_with_iters() {
     let b0=core_probe_shape(V2,CoreVariant::ClockProbe,m,n,k,0);
     let b2=core_probe_shape(V2,CoreVariant::ClockProbe,m,n,k,2);
     let d=gemm_array::design_variant_probe(m,n,k,V2,CoreVariant::ClockProbe,2);
-    let per_iter=pm_npu::kernels::gemm_core::clock_probe_cycles_per_iter();
+    let per_iter=peacemaker_npu::kernels::gemm_core::clock_probe_cycles_per_iter();
     let expected=(d.active_rows()*d.active_cols()*d.waves()) as u64*2*per_iter;
     let got=b2-b0;
     // N=0 skips the loop via jz; the taken jz also skips a few NOPs, so allow a small constant slack per core tile.
@@ -132,7 +132,7 @@ fn single_core_full_designs() {
 }
 
 // ---------------------------------------------------------------- V8 (pair A-sharing, int8 SRS epilogue)
-use pm_npu::kernels::gemm_core::{Control,Epilogue};
+use peacemaker_npu::kernels::gemm_core::{Control,Epilogue};
 const INT8:Epilogue=Epilogue::Int8{shift:12};
 /// Runs the generated V8 PDI/TXN in the whole-array simulator and requires the result to equal the CPU reference
 /// (exact GEMM for `I32`; `clamp(floor(c / 2^shift), -128, 127)` for `Int8`), unchanged inputs, the exact shim
@@ -235,7 +235,7 @@ fn v9_all(m:usize,n:usize,k:usize) {for ctl in [Control::Fast,Control::Slow] {v9
 /// without modifying the command stream.
 #[test]
 fn v9_shim_axi_transitions_stay_cpu_exact_and_invalid_is_atomic() {
-    use pm_npu::dma::ShimAxi;
+    use peacemaker_npu::dma::ShimAxi;
     let (m,n,k)=(512,512,64);let mut d=gemm_array::design_v9(m,n,k,INT8,Control::Fast);
     let odd=ShimAxi{burst:1,cache:2,qos:0};
     let snapshot=d.insts.clone();
@@ -278,13 +278,13 @@ fn v9_reuses_context_with_odd_and_even_kc_times_waves() {
 /// Whole-array V8 under every pair-core data-memory layout: both controls and both epilogues stay CPU-exact.
 #[test] fn v8_exact_512_512_128_all_layouts() {
     for layout in 0..=3u8 {for serial in [false,true] {for epi in [Epilogue::I32,INT8] {
-        v8_shape(epi,Control::Probe(pm_npu::kernels::gemm_core::Probe{layout,serial,..Default::default()}),512,512,128)
+        v8_shape(epi,Control::Probe(peacemaker_npu::kernels::gemm_core::Probe{layout,serial,..Default::default()}),512,512,128)
     }}}
 }
 /// V9 under every pair-core data-memory layout (both controls).
 #[test] fn v9_exact_1024_1024_128_all_layouts() {
     for layout in 0..=3u8 {for serial in [false,true] {
-        v9_shape(Control::Probe(pm_npu::kernels::gemm_core::Probe{layout,serial,..Default::default()}),1024,1024,128)
+        v9_shape(Control::Probe(peacemaker_npu::kernels::gemm_core::Probe{layout,serial,..Default::default()}),1024,1024,128)
     }}
 }
 

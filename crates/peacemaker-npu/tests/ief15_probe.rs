@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 Kaden Schutt
 // hipfire — see LICENSE and NOTICE in the project root.
-//! IEF15 N0 semantics probe (`pm_npu::kernels::iu4_ief15_probe`, design doc §4/§7 step 1): the exact probe PDI + TXN
+//! IEF15 N0 semantics probe (`peacemaker_npu::kernels::iu4_ief15_probe`, design doc §4/§7 step 1): the exact probe PDI + TXN
 //! runs in `config::Config`; (a) it completes, (b) every case's bytes equal an independent lane model written in this
 //! file (i128 / Vec arithmetic, no simulator helpers: catches a wrong simulator), (c) the expected-bytes blob is
 //! deterministic. `IEF15_PROBE_DUMP=<path>` writes the blob (the `npu-gemm --ief15-probe` expected bytes).
-use pm_npu::kernels::iu4_ief15_probe::{self as probe, Case, Op, CASES, NONE, OUT_BYTES};
-use pm_npu::sim::config::Config;
+use peacemaker_npu::kernels::iu4_ief15_probe::{self as probe, Case, Op, CASES, NONE, OUT_BYTES};
+use peacemaker_npu::sim::config::Config;
 
 fn run_probe() -> Vec<u8> {
     let d = probe::design(0);

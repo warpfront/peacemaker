@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 Kaden Schutt
 // hipfire — see LICENSE and NOTICE in the project root.
-//! IEF15 (`pm_npu::kernels::iu4_ief15::Ief15Gemm`, core `iu4_ief15_core`) on the exact PDI/TXN simulator: the C stream
+//! IEF15 (`peacemaker_npu::kernels::iu4_ief15::Ief15Gemm`, core `iu4_ief15_core`) on the exact PDI/TXN simulator: the C stream
 //! unpacks to the CPU oracle `reference` (one RNE to binary32 of `I = sum S*D*C`, exponent `a_r + b_t`) byte for byte.
 //!
 //! Gates (every `#[test]` runs the real core; none is ignored):
@@ -14,10 +14,10 @@
 //!   * `ief15_standin_core_moves_every_byte`: the data movement (descriptors, routes, TXN, locks) with the V8 `no_compute`
 //!     pair program standing in for the IEF15 core: completes and moves exactly the byte counts of the layout. It does
 //!     not need the IEF15 core.
-use pm_npu::kernels::gemm_core::{self, Control, Epilogue, PairRole, Probe};
-use pm_npu::kernels::iu4::{self, Acts, Weights};
-use pm_npu::kernels::iu4_ief15::{self as ief, Ief15Gemm};
-use pm_npu::sim::{config::Config, dma::Direction};
+use peacemaker_npu::kernels::gemm_core::{self, Control, Epilogue, PairRole, Probe};
+use peacemaker_npu::kernels::iu4::{self, Acts, Weights};
+use peacemaker_npu::kernels::iu4_ief15::{self as ief, Ief15Gemm};
+use peacemaker_npu::sim::{config::Config, dma::Direction};
 
 const POISON: u8 = 0xa5;
 
@@ -287,15 +287,15 @@ fn standin(tokens: usize, features: usize, k: usize) {
 
 /// One final-pack group on a single tile (`iu4_ief15_core::final_pack_debug_program`) against the lane model on random
 /// and tie-heavy lanes over the whole exponent range (subnormal, overflow, -0, carries).
-fn run_pack(ops: usize, i: &[i64; 32], xv: &[i16; 32]) -> pm_npu::sim::Tile {
-    use pm_npu::kernels::iu4_ief15_core as core;
+fn run_pack(ops: usize, i: &[i64; 32], xv: &[i16; 32]) -> peacemaker_npu::sim::Tile {
+    use peacemaker_npu::kernels::iu4_ief15_core as core;
     let prog = core::final_pack_debug_program(ops);
-    let dec = pm_npu::sim::decode::PreparedDecoder::new(&prog).unwrap();
-    let mut tile = pm_npu::sim::Tile::new(prog).unwrap();
+    let dec = peacemaker_npu::sim::decode::PreparedDecoder::new(&prog).unwrap();
+    let mut tile = peacemaker_npu::sim::Tile::new(prog).unwrap();
     for (l, v) in i.iter().enumerate() { let o = core::I_ADDR as usize + 8 * l; tile.memory[o..o + 8].copy_from_slice(&v.to_le_bytes()); }
     for (l, v) in xv.iter().enumerate() { let o = core::C16_ADDR as usize + 2 * l; tile.memory[o..o + 2].copy_from_slice(&v.to_le_bytes()); }
     let r = tile.run(&dec, 100_000);
-    assert!(matches!(r, Ok(pm_npu::sim::Step::Done)), "{r:?}");
+    assert!(matches!(r, Ok(peacemaker_npu::sim::Step::Done)), "{r:?}");
     tile
 }
 #[test]
@@ -314,9 +314,9 @@ fn ief15_final_pack_group_matches_lane_model() {
         }
         let t = run_pack(usize::MAX, &i, &xv);
         for l in 0..32 {
-            let o = pm_npu::kernels::iu4_ief15_core::COUT_ADDR as usize + 4 * l;
+            let o = peacemaker_npu::kernels::iu4_ief15_core::COUT_ADDR as usize + 4 * l;
             let got = u32::from_le_bytes(t.memory[o..o + 4].try_into().unwrap());
-            let want = pm_npu::kernels::iu4_ief15_core::pack_lane_model(i[l], xv[l] as i32);
+            let want = peacemaker_npu::kernels::iu4_ief15_core::pack_lane_model(i[l], xv[l] as i32);
             if got != want { bad += 1; if bad < 6 { eprintln!("I {} X {}: got {got:08x} want {want:08x}", i[l], xv[l]); } }
         }
     }

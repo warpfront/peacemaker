@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 Kaden Schutt
 // hipfire — see LICENSE and NOTICE in the project root.
-//! Functional compute/memtile/shim DMA. Descriptor fields follow pm-npu::dma
+//! Functional compute/memtile/shim DMA. Descriptor fields follow peacemaker-npu::dma
 //! (aie-rt MIT); dimensions are inner-first word strides. FIFO backpressure
 //! never consumes a word, lock, iteration or descriptor completion twice.
 use std::collections::VecDeque;

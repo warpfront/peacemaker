@@ -5,8 +5,8 @@
 //! the pair shares one 128-row A block through E/O halves and computes 128 x 128 outputs (L = cols 0..64,
 //! U = cols 64..128 of the pair's B block). DMA is emulated by the harness exactly as `tile_bds_pair` /
 //! `initial_locks_pair` describe it.
-use pm_npu::kernels::{gemm_core as core, gemm_i8};
-use pm_npu::sim::{decode::PreparedDecoder, Neighbour, Neighbours, Step, Tile};
+use peacemaker_npu::kernels::{gemm_core as core, gemm_i8};
+use peacemaker_npu::sim::{decode::PreparedDecoder, Neighbour, Neighbours, Step, Tile};
 
 const M: usize = 128;
 const N: usize = 128;

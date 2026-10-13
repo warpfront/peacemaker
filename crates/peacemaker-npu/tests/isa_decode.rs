@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 Kaden Schutt
 // hipfire — see LICENSE and NOTICE in the project root.
-use pm_npu::isa::decode::{decode,executable_sections};
+use peacemaker_npu::isa::decode::{decode,executable_sections};
 use std::{path::{Path,PathBuf},collections::BTreeMap};
 fn cores(dir:&Path,out:&mut Vec<PathBuf>) {
     for entry in std::fs::read_dir(dir).unwrap() {
@@ -54,7 +54,7 @@ fn decoder_rejects_invalid_elf() {
 
 #[test]
 fn decoder_scalar_boundaries_and_reserved_bits() {
-    use pm_npu::isa::{add_ri,movxm,Reg};
+    use peacemaker_npu::isa::{add_ri,movxm,Reg};
     for value in [-64,-1,0,63] {
         let bytes=add_ri(Reg::R(31),Reg::R(0),value).encode();
         let decoded=decode(&bytes,0x100).unwrap();

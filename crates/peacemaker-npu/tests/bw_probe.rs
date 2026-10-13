@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 Kaden Schutt
 // hipfire — see LICENSE and NOTICE in the project root.
-use pm_npu::kernels::bw_probe::{self, BwConfig, WriteCheck};
-use pm_npu::sim::{config::Config, dma::Direction};
+use peacemaker_npu::kernels::bw_probe::{self, BwConfig, WriteCheck};
+use peacemaker_npu::sim::{config::Config, dma::Direction};
 
 /// Runs `submits` consecutive submits of the exact PDI+TXN bytes on one simulator context. Every submit must
 /// finish (all SYNCs satisfied), count exactly the configured DRAM bytes per shim channel, and (after poisoning
@@ -46,7 +46,7 @@ fn cfg(cols: usize, read_ch: usize, write_ch: usize, bytes: usize) -> BwConfig {
 /// guarantee). This is a functional-model check only: the simulator has no AXI timing or coherence model.
 #[test] fn shim_axi_variants_move_the_same_data() {
     for (burst, cache, qos) in [(0, 2, 0), (1, 2, 0), (2, 2, 0), (3, 0, 0), (3, 3, 0), (3, 2, 0xf)] {
-        run_design(bw_probe::design_for_hazardous_probe(BwConfig { axi: pm_npu::dma::ShimAxi { burst, cache, qos }, ..cfg(2, 2, 2, 20 << 10) }), 2);
+        run_design(bw_probe::design_for_hazardous_probe(BwConfig { axi: peacemaker_npu::dma::ShimAxi { burst, cache, qos }, ..cfg(2, 2, 2, 20 << 10) }), 2);
     }
 }
 /// Every legal field value, including AxCACHE allocate values (0xb, 0xf) that must not be assumed correct on real
@@ -55,7 +55,7 @@ fn cfg(cols: usize, read_ch: usize, write_ch: usize, bytes: usize) -> BwConfig {
 /// nothing about coherence or correctness on hardware.
 #[test] fn shim_axi_all_legal_field_values_are_accepted_by_the_functional_model() {
     for (burst, cache, qos) in [(0, 0xb, 0), (3, 0xf, 0xf), (2, 0xf, 7)] {
-        run_design(bw_probe::design_for_hazardous_probe(BwConfig { axi: pm_npu::dma::ShimAxi { burst, cache, qos }, ..cfg(2, 2, 2, 20 << 10) }), 2);
+        run_design(bw_probe::design_for_hazardous_probe(BwConfig { axi: peacemaker_npu::dma::ShimAxi { burst, cache, qos }, ..cfg(2, 2, 2, 20 << 10) }), 2);
     }
 }
 /// Sizes that are not a multiple of the 16 KiB source buffer exercise the short tail BD, the chain suffix and
@@ -77,7 +77,7 @@ fn low_memtile_word_mutation_does_not_corrupt_repeated_writes() {
     for submit in 0..3 {
         if submit > 0 {
             let mutations: Vec<_> = (0..d.cfg.cols as u32).map(|col| {
-                pm_npu::sim::config::TxnOp::Write(pm_npu::dma::Location::new(col, 1).address(0), 0x00cd_0cd0)
+                peacemaker_npu::sim::config::TxnOp::Write(peacemaker_npu::dma::Location::new(col, 1).address(0), 0x00cd_0cd0)
             }).collect();
             sim.execute(&mutations, &mut args).unwrap();
         }
@@ -198,9 +198,9 @@ fn concurrency_rejects_invalid_geometry_and_unsafe_axi() {
         assert!(bw_probe::ConcurrencyConfig { bd_bytes, ..good }.validate().is_err());
     }
     for (cache, qos) in [(0, 0), (3, 0), (2, 1), (2, 15)] {
-        assert!(bw_probe::ConcurrencyConfig { axi: pm_npu::dma::ShimAxi { burst: 3, cache, qos }, ..good }.validate().is_err());
+        assert!(bw_probe::ConcurrencyConfig { axi: peacemaker_npu::dma::ShimAxi { burst: 3, cache, qos }, ..good }.validate().is_err());
     }
     for burst in 0..=3 {
-        assert!(bw_probe::ConcurrencyConfig { axi: pm_npu::dma::ShimAxi { burst, cache: 2, qos: 0 }, ..good }.validate().is_ok());
+        assert!(bw_probe::ConcurrencyConfig { axi: peacemaker_npu::dma::ShimAxi { burst, cache: 2, qos: 0 }, ..good }.validate().is_ok());
     }
 }
