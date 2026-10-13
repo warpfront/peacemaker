@@ -2,13 +2,13 @@
 // Copyright (c) 2026 Kaden Schutt
 // hipfire — see LICENSE and NOTICE in the project root.
 
-use hipfire_isa::V;
+use peacemaker_isa::V;
 #[macro_use]
 #[path = "support/rocm.rs"]
 mod rocm;
-use hipfire_isa::kernels::gemm_uk::{Chain, Iu4, FragmentLayout, Prefetch};
+use peacemaker_isa::kernels::gemm_uk::{Chain, Iu4, FragmentLayout, Prefetch};
 #[cfg(feature = "toolchain")]
-use hipfire_isa::{Arch, Builder, KernelSpec, KernargLayout, RegPlan, reg::Live, kernels::gemm_uk::Iu8};
+use peacemaker_isa::{Arch, Builder, KernelSpec, KernargLayout, RegPlan, reg::Live, kernels::gemm_uk::Iu8};
 #[cfg(feature = "toolchain")]
 use peacemaker_author::{Gfx1100, Gfx1151, Gfx1201, MmaIu4, Workgroup};
 
@@ -29,7 +29,7 @@ fn rejects_overlapping_independent_outputs_and_wrong_prefetch_distance() {
 fn iu8_chain_passes_builder_and_llvm_mc() {
     use std::{fs, process::Command};
     let llvm_mc = require_rocm_tool!("llvm-mc");
-    fn assembled<T: MmaIu4, const W: u8>(llvm_mc: &std::path::Path, arch: Arch) where Iu8: hipfire_isa::kernels::gemm_uk::MmaKind<T, Input = V<W>> {
+    fn assembled<T: MmaIu4, const W: u8>(llvm_mc: &std::path::Path, arch: Arch) where Iu8: peacemaker_isa::kernels::gemm_uk::MmaKind<T, Input = V<W>> {
     let mut regs = RegPlan::new(32, 8).unwrap();
     let a = regs.v::<W>("a", 0, Live::Whole).unwrap();
     let x = regs.v::<W>("x", 4, Live::Whole).unwrap();

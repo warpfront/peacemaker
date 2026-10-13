@@ -7,7 +7,7 @@
 //! code object around the untouched ACO body out.
 //!
 //! ```text
-//! cargo run -p hipfire-isa --features toolchain --example aco_hsa_emit -- <artifact-dir>/shader.rawspec.json <contract.json> <out-dir>
+//! cargo run -p peacemaker-isa --features toolchain --example aco_hsa_emit -- <artifact-dir>/shader.rawspec.json <contract.json> <out-dir>
 //! ```
 //!
 //! Stages, each a hard stop: `artifact.json` verification (every listed file present and hashed to
@@ -20,8 +20,8 @@
 //! `aco-pm-candidate-v1` manifest for each (`candidate.co.manifest.json`,
 //! `candidate.hxaco.manifest.json`) into `<out-dir>` and prints one JSON summary (exit 0). On any
 //! rejection it prints `{"verdict":"kill","stage":..,"reason":..}` and exits 1: no partial output.
-use hipfire_isa::aco_cert::{certify_program, LaunchContract};
-use hipfire_isa::aco_hsa::{adapt_to_hsa, verify_artifact_dir, AcoHipContract, HipArgKind};
+use peacemaker_isa::aco_cert::{certify_program, LaunchContract};
+use peacemaker_isa::aco_hsa::{adapt_to_hsa, verify_artifact_dir, AcoHipContract, HipArgKind};
 use peacemaker_ir::inst::Frontend;
 use peacemaker_lift::raw::{lift_raw, parse_spec_file, verify_sidecar};
 use peacemaker_lift::Options;
@@ -97,7 +97,7 @@ fn main() {
         std::fs::write(out.join(format!("{name}.manifest.json")), manifest + "\n").unwrap_or_else(|e| kill("output", e));
     }
     let h = |b: &[u8]| b.iter().map(|x| format!("{x:02x}")).collect::<String>();
-    let domain = |r: &hipfire_isa::aco_cert::CertificationReport| json!({
+    let domain = |r: &peacemaker_isa::aco_cert::CertificationReport| json!({
         "domain": format!("{:?}", r.domain),
         "frontend": format!("{:?}", r.frontend),
         "symbol": r.symbol,
@@ -127,7 +127,7 @@ fn main() {
             "mesa_patch_sha256": h(&binding.mesa_patch_sha256),
             "mesa_commit": binding.mesa_commit,
             "contract_sha256": h(&emission.contract_sha256),
-            "adapter_version": hipfire_isa::aco_hsa::ADAPTER_VERSION,
+            "adapter_version": peacemaker_isa::aco_hsa::ADAPTER_VERSION,
             "hsa_elf_sha256": h(&emission.elf_sha256),
             "hsa_bundle_sha256": h(&sha256(&emission.bundle)),
             "prologue_sha256": h(&emission.prologue.sha256),

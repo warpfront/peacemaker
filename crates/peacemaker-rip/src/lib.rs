@@ -3,7 +3,7 @@
 //! A `.rip` file is a Rust-shaped kernel script. This crate parses it at
 //! run time (`syn`, no rustc), executes its `emit` function with a small
 //! compile-time evaluator against the same generic builder the Rust DSL
-//! uses (`hipfire_isa::Builder`, through `peacemaker_author`'s sealed
+//! uses (`peacemaker_isa::Builder`, through `peacemaker_author`'s sealed
 //! runtime driver), and returns the builder's `Emitted`. Editing a `.rip`
 //! file and re-running needs no cargo rebuild.
 //!
@@ -56,8 +56,8 @@ pub mod ops;
 pub mod preprocess;
 pub mod value;
 
-use hipfire_isa::kernels::iu4_gemm::ModuleProof;
-use hipfire_isa::{Arch, Emitted};
+use peacemaker_isa::kernels::iu4_gemm::ModuleProof;
+use peacemaker_isa::{Arch, Emitted};
 use interp::Interp;
 use value::Value;
 
@@ -150,7 +150,7 @@ pub fn module_named(source: &str, name: &str, arch: Arch, variants: &[&str], mod
         let it = Interp::load(&file, name);
         variants.iter().map(|v| emit_one(&it, arch, v)).collect()
     })?;
-    let (text, proof) = hipfire_isa::kernels::iu4_gemm::module(&emitted, module_name)?;
+    let (text, proof) = peacemaker_isa::kernels::iu4_gemm::module(&emitted, module_name)?;
     Ok((emitted, text, proof))
 }
 
@@ -169,8 +169,8 @@ pub use certify::{certify, Certificate};
 #[cfg(feature = "certify")]
 mod certify {
     use super::*;
-    use hipfire_isa::toolchain::{build, Toolchain};
-    use hipfire_isa::{ledger_replay, pm_check};
+    use peacemaker_isa::toolchain::{build, Toolchain};
+    use peacemaker_isa::{ledger_replay, pm_check};
     use std::path::Path;
 
     /// What certification proved about one symbol of a module.

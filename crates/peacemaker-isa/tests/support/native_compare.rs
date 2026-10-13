@@ -3,7 +3,7 @@
 // hipfire — see LICENSE and NOTICE in the project root.
 
 //! Shared native-vs-ROCm-oracle comparison for the test crates that check the
-//! native code-object writer (`native_identity`, `hipfire-rip`'s `qsa`),
+//! native code-object writer (`native_identity`, `peacemaker-rip`'s `qsa`),
 //! included by path: `#[path = ".../support/native_compare.rs"] mod native_compare;`.
 #![allow(dead_code)]
 
@@ -44,11 +44,11 @@ pub fn strict_whole_file_difference(native_elf: &[u8], oracle_elf: &[u8], native
 
 /// The `.comment` the native writer must stamp: the only ELF content excluded
 /// from the comparison against the oracle (its content is checked against this).
-/// The version is hipfire-isa's (the writer's), read from its exported
+/// The version is peacemaker-isa's (the writer's), read from its exported
 /// `native::VERSION`, not `CARGO_PKG_VERSION` of whichever crate includes this
-/// support file (hipfire-rip includes it by `#[path]`).
+/// support file (peacemaker-rip includes it by `#[path]`).
 fn native_comment() -> Vec<u8> {
-    let isa_version = hipfire_isa::native::VERSION.split_whitespace().nth(1).expect("hipfire-isa native::VERSION carries the crate version");
+    let isa_version = peacemaker_isa::native::VERSION.split_whitespace().nth(1).expect("peacemaker-isa native::VERSION carries the crate version");
     format!("hipfire peacemaker native-emit {isa_version}\0").into_bytes()
 }
 

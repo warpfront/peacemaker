@@ -11,9 +11,9 @@
   "builder_proof_sha256": "6ac1b9cfdb26b043df8ae167884215936535bfc1302ae260903c6fb403eabc07",
   "builder_base_commit": "ade6c95d587dd7de4bae2d378f137f393349861d",
   "rebuild": [
-    "cargo build -p hipfire-isa --features toolchain --bin hipfire-isa --bin peacemaker",
-    "target/debug/hipfire-isa emit --kernel fp8_gemm --scale both --epi all --arch gfx1201 --out /tmp/bf16-fp8-module.s --proof /tmp/bf16-fp8-proof.json",
-    "target/debug/peacemaker custom build --arch gfx1201 --s /tmp/bf16-fp8-module.s --out /tmp/bf16-fp8-bundle.hxaco --manifest /tmp/bf16-fp8-manifest.json --contract crates/hipfire-isa/kernels/fp8_gemm.ratio-256x128x8-row.silu-bf16.contract.json --proof /tmp/bf16-fp8-proof.json"
+    "cargo build -p peacemaker-isa --features toolchain --bin peacemaker-isa --bin peacemaker",
+    "target/debug/peacemaker-isa emit --kernel fp8_gemm --scale both --epi all --arch gfx1201 --out /tmp/bf16-fp8-module.s --proof /tmp/bf16-fp8-proof.json",
+    "target/debug/peacemaker custom build --arch gfx1201 --s /tmp/bf16-fp8-module.s --out /tmp/bf16-fp8-bundle.hxaco --manifest /tmp/bf16-fp8-manifest.json --contract crates/peacemaker-isa/kernels/fp8_gemm.ratio-256x128x8-row.silu-bf16.contract.json --proof /tmp/bf16-fp8-proof.json"
   ],
   "certification": "11/11 symbol contracts pass: parse-back, shape, LDS bounds, wait-ledger replay, wave32, 0 spills, 192 VGPR maximum (unchanged)",
   "unchanged_symbol_sha256": {

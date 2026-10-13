@@ -12,10 +12,10 @@ mod rocm;
 fn dop_paths_pass_real_object_wait_and_hazard_replay() {
     let _llvm_mc = require_rocm_tool!("llvm-mc");
     let _linker = require_rocm_tool!("ld.lld");
-    use hipfire_isa::{kernels::gdn_scan, pm_check, toolchain::Toolchain, Arch};
+    use peacemaker_isa::{kernels::gdn_scan, pm_check, toolchain::Toolchain, Arch};
     use std::process::Command;
     let emitted = gdn_scan::emit(Arch::Gfx1201).unwrap();
-    let dir = std::env::temp_dir().join(format!("hipfire-isa-gdn-scan-cert-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("peacemaker-isa-gdn-scan-cert-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let source = dir.join("gdn_scan.s");
     std::fs::write(&source, &emitted.s_text).unwrap();

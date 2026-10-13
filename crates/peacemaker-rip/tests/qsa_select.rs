@@ -1,12 +1,12 @@
-use hipfire_isa::{Arch, kernels::{iu4_gemm, qsa_select::{self, Kind, Spec}, qsa_score, qsa_topk}, pm_check,
+use peacemaker_isa::{Arch, kernels::{iu4_gemm, qsa_select::{self, Kind, Spec}, qsa_score, qsa_topk}, pm_check,
     toolchain::{build, oracle_assemble_link_bundle, Toolchain}};
 use std::{fs, path::PathBuf};
 
-#[path = "../../hipfire-isa/tests/support/native_compare.rs"]
+#[path = "../../peacemaker-isa/tests/support/native_compare.rs"]
 mod native_compare;
 
-const SCORE: &str = include_str!("../../hipfire-isa/src/kernels/qsa_score.rip");
-const TOPK: &str = include_str!("../../hipfire-isa/src/kernels/qsa_topk.rip");
+const SCORE: &str = include_str!("../../peacemaker-isa/src/kernels/qsa_score.rip");
+const TOPK: &str = include_str!("../../peacemaker-isa/src/kernels/qsa_topk.rip");
 
 /// The two standalone RIP sources, compiled independently and joined in the
 /// fixed module order, reproduce the Rust emitters' assembly, BuilderProofs,
@@ -20,9 +20,9 @@ fn standalone_qsa_select_matches_rust_and_shipped_objects() {
     let tools = Toolchain { host_target: "host-x86_64-unknown-linux-gnu-".into(), ..Toolchain::oracle() };
     let arch = Arch::Gfx1151;
     for other in [Arch::Gfx1100, Arch::Gfx1201] {
-        assert!(hipfire_rip::compile(SCORE, other, "score").is_err() && hipfire_rip::compile(TOPK, other, "select").is_err());
+        assert!(peacemaker_rip::compile(SCORE, other, "score").is_err() && peacemaker_rip::compile(TOPK, other, "select").is_err());
     }
-    let rip = vec![hipfire_rip::compile(SCORE, arch, "score").unwrap(), hipfire_rip::compile(TOPK, arch, "select").unwrap()];
+    let rip = vec![peacemaker_rip::compile(SCORE, arch, "score").unwrap(), peacemaker_rip::compile(TOPK, arch, "select").unwrap()];
     let (rip_text, rip_proof) = iu4_gemm::module(&rip, &qsa_select::module(arch)).unwrap();
     let (rust, rust_text, rust_proof) = qsa_select::emit_module(arch).unwrap();
     assert_eq!(rip_text, rust_text, "assembly");

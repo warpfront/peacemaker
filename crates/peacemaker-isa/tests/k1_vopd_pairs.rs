@@ -2,9 +2,9 @@
 // Copyright (c) 2026 Kaden Schutt
 // hipfire — see LICENSE and NOTICE in the project root.
 
-use hipfire_isa::{Arch, Builder, KernargLayout, KernelSpec, RegPlan};
-use hipfire_isa::kernels::iu4_k1::{emit_fold, FoldRegisters, Variant};
-use hipfire_isa::reg::Live;
+use peacemaker_isa::{Arch, Builder, KernargLayout, KernelSpec, RegPlan};
+use peacemaker_isa::kernels::iu4_k1::{emit_fold, FoldRegisters, Variant};
+use peacemaker_isa::reg::Live;
 use std::io::Write;
 use std::process::{Command, Stdio};
 #[macro_use]
@@ -39,7 +39,7 @@ fn all_96_k1_fold_packets_encode_on_gfx1201() {
         plan.v::<8>("acc", (64 + i * 8) as u8, Live::Whole).unwrap()
     });
     let sc_row = plan.v::<8>("sc_row", 136, Live::Whole).unwrap();
-    let sc_quads = [hipfire_isa::V::<4>(sc_row.base()), hipfire_isa::V::<4>(sc_row.base() + 4)];
+    let sc_quads = [peacemaker_isa::V::<4>(sc_row.base()), peacemaker_isa::V::<4>(sc_row.base() + 4)];
     let t = plan.v::<8>("t", 144, Live::Whole).unwrap();
     let d = std::array::from_fn(|i| plan.v::<1>("d_x", (152 + i) as u8, Live::Whole).unwrap());
     let spec = KernelSpec {

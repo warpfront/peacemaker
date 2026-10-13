@@ -1,17 +1,17 @@
 [package]
-name = "hipfire-rip"
+name = "peacemaker-rip"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "Standalone .rip front end: a runtime parser, elaborator and lowering of Rust-shaped kernel scripts onto the hipfire-isa builder (no rustc)"
+description = "Standalone .rip front end: a runtime parser, elaborator and lowering of Rust-shaped kernel scripts onto the peacemaker-isa builder (no rustc)"
 
 [features]
 default = ["certify"]
 # Object-level certification of emitted modules (llvm-mc, ld.lld, parse-back, M7).
-certify = ["hipfire-isa/toolchain"]
+certify = ["peacemaker-isa/toolchain"]
 
 [dependencies]
-hipfire-isa = { path = "../hipfire-isa" }
+peacemaker-isa = { path = "../peacemaker-isa" }
 peacemaker-author = { path = "../peacemaker-author" }
 syn = { version = "2", features = ["full", "visit-mut"] }
 quote = "1"
@@ -19,5 +19,5 @@ proc-macro2 = { version = "1", features = ["span-locations"] }
 serde_json.workspace = true
 
 [[bin]]
-name = "rip"
-path = "src/bin/rip.rs"
+name = "peacemaker-rip"
+path = "src/bin/peacemaker-rip.rs"

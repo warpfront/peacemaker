@@ -4,8 +4,8 @@
 
 //! Sampled-DFlash device accept builder module (gfx1201): the PM twin of
 //! `kernels/src/dflash_sampled_accept_sparse_q.hip`.
-use hipfire_isa::Arch;
-use hipfire_isa::kernels::dflash_accept;
+use peacemaker_isa::Arch;
+use peacemaker_isa::kernels::dflash_accept;
 #[macro_use]
 #[path = "support/rocm.rs"]
 mod rocm;
@@ -65,7 +65,7 @@ fn committed_bundle_equals_fresh_emission() {
 
 fn link(text: &str, arch: &str, stem: &str) -> Vec<u8> {
     use std::process::Command;
-    let dir = std::env::temp_dir().join(format!("hipfire-isa-dflash-accept-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("peacemaker-isa-dflash-accept-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let (s, o, co) = (dir.join(format!("{stem}.s")), dir.join(format!("{stem}.o")), dir.join(format!("{stem}.co")));
     std::fs::write(&s, text).unwrap();
@@ -95,7 +95,7 @@ fn text_section(bytes: &[u8]) -> Vec<u8> {
 #[cfg(feature = "toolchain")]
 mod toolchain {
     use super::*;
-    use hipfire_isa::{ledger_replay, pm_check, toolchain::{build, certify, Toolchain}};
+    use peacemaker_isa::{ledger_replay, pm_check, toolchain::{build, certify, Toolchain}};
 
     /// The symbol certifies: parse-back, independent wait replay, the committed
     /// shape contract, the static LDS bound, and M7's lift identity plus
@@ -109,7 +109,7 @@ mod toolchain {
         let _ = require_rocm_tool!("llvm-readobj");
         let (emitted, text, _) = dflash_accept::emit_module(ARCH).unwrap();
         for e in &emitted { ledger_replay::replay_waits(&e.s_text, ARCH).unwrap(); }
-        let dir = std::env::temp_dir().join(format!("hipfire-isa-dflash-accept-cert-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("peacemaker-isa-dflash-accept-cert-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let s = dir.join("module.s");
         std::fs::write(&s, &text).unwrap();

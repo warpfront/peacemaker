@@ -11,13 +11,13 @@
 //! oracle's is the ROCm linker's, the native one is the peacemaker native-emit
 //! stamp). The comparison and its exact normalization rules live in
 //! `support/native_compare.rs` (`compare_code_objects`, `compare_bundles`),
-//! shared with `hipfire-rip`'s `qsa` test; the strict whole-file comparison is
+//! shared with `peacemaker-rip`'s `qsa` test; the strict whole-file comparison is
 //! kept there as `strict_whole_file_difference`.
 #![cfg(feature = "toolchain")]
-use hipfire_isa::kernels::{fp8_gemm, gdn_scan, iu4_gemm, iu4_v2b, iu4_v2b_a4, iu4_v2c, mq4_rows_x4, mtp_dense_det_gfx11, mtp_q8_det_gfx11, qsa_gather, qwen4_mq4_x4_gfx11, qwen4_mq6_x4, qwen4_mq6_x4_gfx11, qwen4_moe_sym};
-use hipfire_isa::kernels::gemm_uk::{Chain, Iu8, MmaKind};
-use hipfire_isa::toolchain::{oracle_assemble_link_bundle, Toolchain};
-use hipfire_isa::{native, Arch, Builder, Emitted, KernargLayout, KernelSpec, RegPlan, V, reg::Live};
+use peacemaker_isa::kernels::{fp8_gemm, gdn_scan, iu4_gemm, iu4_v2b, iu4_v2b_a4, iu4_v2c, mq4_rows_x4, mtp_dense_det_gfx11, mtp_q8_det_gfx11, qsa_gather, qwen4_mq4_x4_gfx11, qwen4_mq6_x4, qwen4_mq6_x4_gfx11, qwen4_moe_sym};
+use peacemaker_isa::kernels::gemm_uk::{Chain, Iu8, MmaKind};
+use peacemaker_isa::toolchain::{oracle_assemble_link_bundle, Toolchain};
+use peacemaker_isa::{native, Arch, Builder, Emitted, KernargLayout, KernelSpec, RegPlan, V, reg::Live};
 use peacemaker_author::{Gfx1100, Gfx1151, Gfx1201, MmaIu4, Workgroup};
 use std::collections::BTreeMap;
 
@@ -135,7 +135,7 @@ fn corpus() -> Vec<Unit> {
     single(&mut units, iu8_chain::<Gfx1201, 2>(Arch::Gfx1201));
     // The CLI-only `fold_magic` probe (gfx1201).
     let probe = std::env::temp_dir().join(format!("hipfire-native-fold-magic-{}", std::process::id()));
-    let status = std::process::Command::new(env!("CARGO_BIN_EXE_hipfire-isa"))
+    let status = std::process::Command::new(env!("CARGO_BIN_EXE_peacemaker-isa"))
         .args(["emit", "--kernel", "fold_magic", "--arch", "gfx1201", "--out"]).arg(probe.with_extension("s"))
         .arg("--proof").arg(probe.with_extension("json")).status().unwrap();
     assert!(status.success());
@@ -147,10 +147,10 @@ fn corpus() -> Vec<Unit> {
     for entry in std::fs::read_dir(points).unwrap() {
         let path = entry.unwrap().path();
         if !path.to_string_lossy().ends_with(".points.json") { continue }
-        let cfg: hipfire_isa::profile::Config = serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        let cfg: peacemaker_isa::profile::Config = serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
         let Some(u) = units.iter().find(|u| u.symbols == [cfg.symbol.clone()]) else { continue };
         // A point set whose anchors the kernel no longer has instruments nothing.
-        let Ok((text, map)) = hipfire_isa::profile::instrument(&u.text, &cfg, u.arch) else { continue };
+        let Ok((text, map)) = peacemaker_isa::profile::instrument(&u.text, &cfg, u.arch) else { continue };
         profiled.push(Unit { name: map.profiled_symbol.clone(), arch: u.arch, text, symbols: vec![map.profiled_symbol] });
     }
     // Every target gets a profile build: where no committed point set still
@@ -160,9 +160,9 @@ fn corpus() -> Vec<Unit> {
         if profiled.iter().any(|u| u.arch == arch) { continue }
         'kernels: for u in units.iter().filter(|u| u.arch == arch && u.symbols.len() == 1) {
             for label in u.text.lines().filter_map(|l| l.trim().strip_suffix(':')).filter(|l| l.starts_with(".L") && !l.ends_with("_end")) {
-                let cfg: hipfire_isa::profile::Config = serde_json::from_value(serde_json::json!({
+                let cfg: peacemaker_isa::profile::Config = serde_json::from_value(serde_json::json!({
                     "symbol": u.symbols[0], "rules": [{ "name": "point", "label": label }] })).unwrap();
-                if let Ok((text, map)) = hipfire_isa::profile::instrument(&u.text, &cfg, arch) {
+                if let Ok((text, map)) = peacemaker_isa::profile::instrument(&u.text, &cfg, arch) {
                     profiled.push(Unit { name: map.profiled_symbol.clone(), arch, text, symbols: vec![map.profiled_symbol] });
                     break 'kernels;
                 }

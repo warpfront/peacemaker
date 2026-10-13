@@ -13,8 +13,8 @@
 //! padding tail, bytes past the grid) is untouched, and no source buffer is ever written. Each
 //! rank's source is a distinct mapped region at a high virtual address (N4: or the destination
 //! itself for the local slot; EP2 maps no local slot at all, so a read of it faults). No GPU.
-use hipfire_isa::Arch;
-use hipfire_isa::kernels::ep_gather_grouped_rows_by_tile_owner as pull;
+use peacemaker_isa::Arch;
+use peacemaker_isa::kernels::ep_gather_grouped_rows_by_tile_owner as pull;
 use pull::Variant;
 use peacemaker_ir::emu::{Emulator, Launch, Memory};
 use std::sync::LazyLock;
@@ -119,7 +119,7 @@ fn committed_bundle_equals_fresh_emission() {
 
 fn link(text: &str, arch: &str, stem: &str) -> Vec<u8> {
     use std::process::Command;
-    let dir = std::env::temp_dir().join(format!("hipfire-isa-ep-tile-pull-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("peacemaker-isa-ep-tile-pull-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let (s, o, co) = (dir.join(format!("{stem}.s")), dir.join(format!("{stem}.o")), dir.join(format!("{stem}.co")));
     std::fs::write(&s, text).unwrap();
@@ -150,7 +150,7 @@ fn text_section(bytes: &[u8]) -> Vec<u8> {
 
 fn lift(variant: Variant) -> peacemaker_ir::Program {
     let text = pull::emit_module(variant, ARCH).unwrap().1;
-    let elf = hipfire_isa::native::assemble(&text, ARCH).unwrap();
+    let elf = peacemaker_isa::native::assemble(&text, ARCH).unwrap();
     peacemaker_lift::lift_object(&elf, peacemaker_lift::Options { frontend: peacemaker_ir::inst::Frontend::Builder }).unwrap().program
 }
 static PROGRAM_EP2: LazyLock<peacemaker_ir::Program> = LazyLock::new(|| lift(Variant::Ep2));
@@ -477,7 +477,7 @@ fn interpreter_covers_the_module() {
 #[cfg(feature = "toolchain")]
 mod toolchain {
     use super::*;
-    use hipfire_isa::{ledger_replay, pm_check, toolchain::{build, certify, Toolchain}};
+    use peacemaker_isa::{ledger_replay, pm_check, toolchain::{build, certify, Toolchain}};
 
     /// Each symbol certifies: parse-back, independent wait replay, the committed shape contract,
     /// the static LDS bound, and M7's lift identity plus wait/hazard/barrier/window analyses of the
@@ -493,7 +493,7 @@ mod toolchain {
             let (emitted, text, _) = pull::emit_module(variant, ARCH).unwrap();
             assert_eq!(text, pull::emit_module(variant, ARCH).unwrap().1, "{variant:?}: emission is not deterministic");
             for e in &emitted { ledger_replay::replay_waits(&e.s_text, ARCH).unwrap(); }
-            let dir = std::env::temp_dir().join(format!("hipfire-isa-ep-tile-pull-cert-{:?}-{}", variant, std::process::id()));
+            let dir = std::env::temp_dir().join(format!("peacemaker-isa-ep-tile-pull-cert-{:?}-{}", variant, std::process::id()));
             std::fs::create_dir_all(&dir).unwrap();
             let s = dir.join("module.s");
             std::fs::write(&s, &text).unwrap();

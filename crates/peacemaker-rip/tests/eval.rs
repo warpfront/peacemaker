@@ -2,10 +2,10 @@
 //! integer typing, lexical capture, places, control flow, formatting,
 //! error positions, and the builder / driver vocabulary.
 
-use hipfire_isa::Arch;
+use peacemaker_isa::Arch;
 
 fn run(src: &str) -> Result<String, String> {
-    hipfire_rip::eval(src, "main")
+    peacemaker_rip::eval(src, "main")
 }
 fn ok(src: &str) -> String {
     run(src).unwrap_or_else(|e| panic!("{e}"))
@@ -115,7 +115,7 @@ fn faults_carry_their_source_position_and_unreached_code_is_not_examined() {
     let e = err("fn main() -> u32 { weird!(1); 2 }");
     assert!(e.contains("macro `weird!` is not supported") && e.starts_with("rip:1:"), "{e}");
     // A syntax error is positioned too.
-    let e = hipfire_rip::parse("fn main() {\n  let = ;\n}", "t.rip").err().expect("syntax error");
+    let e = peacemaker_rip::parse("fn main() {\n  let = ;\n}", "t.rip").err().expect("syntax error");
     assert!(e.starts_with("t.rip:2:"), "{e}");
 }
 
@@ -147,9 +147,9 @@ fn spec_script(body: &str) -> String {
 fn builder_vocabulary_emits_instructions_and_the_driver_scope_ends_at_the_next_builder_use() {
     let src = spec_script(r#"op(wg.isa(), "v_mov_b32_e32 v0, 0", &[v(0)], &[])?;"#);
     for arch in [Arch::Gfx1151, Arch::Gfx1201] {
-        let e = hipfire_rip::compile(&src, arch, "v").unwrap_or_else(|e| panic!("{e}"));
+        let e = peacemaker_rip::compile(&src, arch, "v").unwrap_or_else(|e| panic!("{e}"));
         assert!(e.s_text.contains("v_mov_b32_e32 v0, 0") && e.s_text.contains("s_endpgm"), "{}", e.s_text);
-        assert_eq!(hipfire_rip::symbol_of(&e).unwrap(), "t_kernel");
+        assert_eq!(peacemaker_rip::symbol_of(&e).unwrap(), "t_kernel");
     }
     // Using `wg` after the statement that mentions `b` again is outside the scope.
     let src = r#"
@@ -164,7 +164,7 @@ fn builder_vocabulary_emits_instructions_and_the_driver_scope_ends_at_the_next_b
             wg.end(end)?;
             b.finish()
         }"#;
-    let e = hipfire_rip::compile(src, Arch::Gfx1151, "v").err().unwrap();
+    let e = peacemaker_rip::compile(src, Arch::Gfx1151, "v").err().unwrap();
     assert!(e.contains("no active Workgroup"), "{e}");
 }
 
@@ -175,23 +175,23 @@ fn lds_handoff_needs_its_wait_before_the_barrier() {
         let (t, st) = wg.ds_store(t, Instruction::new("ds_store_b32 v0, v1", vec![], vec![v(0), v(1)]).memory(MemoryClass::DsStore))?;
     "#;
     let good = spec_script(&format!("{store} let d = wg.wait(st)?; let (t,) = wg.barrier((ready(t, d),))?; wg.ds_load(&t, Instruction::new(\"ds_load_b32 v2, v0\", vec![v(2)], vec![v(0)]).memory(MemoryClass::DsLoad))?;"));
-    let e = hipfire_rip::compile(&good, Arch::Gfx1151, "v").unwrap_or_else(|e| panic!("{e}"));
+    let e = peacemaker_rip::compile(&good, Arch::Gfx1151, "v").unwrap_or_else(|e| panic!("{e}"));
     assert!(e.s_text.contains("s_barrier"));
     // The same program without the wait: the driver names the transition it refuses.
     let bad = spec_script(&format!("{store} let (t,) = wg.barrier((ready(t, st),))?; wg.ds_load(&t, Instruction::new(\"ds_load_b32 v2, v0\", vec![v(2)], vec![v(0)]).memory(MemoryClass::DsLoad))?;"));
-    let e = hipfire_rip::compile(&bad, Arch::Gfx1151, "v").err().unwrap();
+    let e = peacemaker_rip::compile(&bad, Arch::Gfx1151, "v").err().unwrap();
     assert!(e.contains("undrained"), "{e}");
 }
 
 #[test]
 fn chains_emit_wmma_with_exact_operands_and_reject_unsupported_shapes() {
     let ok_src = spec_script(r#"let acc = Chain::new(8, 8, "f16"); acc.step(wg.isa(), 16, 4, 24, 4)?;"#);
-    let e = hipfire_rip::compile(&ok_src, Arch::Gfx1201, "v").unwrap_or_else(|e| panic!("{e}"));
+    let e = peacemaker_rip::compile(&ok_src, Arch::Gfx1201, "v").unwrap_or_else(|e| panic!("{e}"));
     assert!(e.s_text.contains("v_wmma_f32_16x16x16_f16 v[8:15], v[16:19], v[24:27], v[8:15]"), "{}", e.s_text);
     let bad = spec_script(r#"let acc = Chain::new(8, 8, "iu4"); acc.step(wg.isa(), 16, 4, 24, 4)?;"#);
-    assert!(hipfire_rip::compile(&bad, Arch::Gfx1201, "v").err().unwrap().contains("unsupported matrix kind"));
+    assert!(peacemaker_rip::compile(&bad, Arch::Gfx1201, "v").err().unwrap().contains("unsupported matrix kind"));
     let bad = spec_script(r#"let acc = Chain::new(8, 8, "f16"); acc.step(wg.isa(), 16, 3, 24, 4)?;"#);
-    assert!(hipfire_rip::compile(&bad, Arch::Gfx1201, "v").err().unwrap().contains("operand widths"));
+    assert!(peacemaker_rip::compile(&bad, Arch::Gfx1201, "v").err().unwrap().contains("operand widths"));
 }
 
 #[test]
@@ -220,8 +220,8 @@ fn shared_helpers_spell_their_instructions_per_arch() {
             wg.end(end)?;
             b.finish()
         }"#;
-    let g11 = hipfire_rip::compile(src, Arch::Gfx1151, "v").unwrap_or_else(|e| panic!("{e}")).s_text;
-    let g12 = hipfire_rip::compile(src, Arch::Gfx1201, "v").unwrap_or_else(|e| panic!("{e}")).s_text;
+    let g11 = peacemaker_rip::compile(src, Arch::Gfx1151, "v").unwrap_or_else(|e| panic!("{e}")).s_text;
+    let g12 = peacemaker_rip::compile(src, Arch::Gfx1201, "v").unwrap_or_else(|e| panic!("{e}")).s_text;
     for want in ["s_load_b256 s[8:15], s[0:1], null", "s_mov_b32 s15, 0x31004000", "s_add_u32 s16, s8, s24", "s_addc_u32 s17, s9, 0", "s_add_i32 s17, s17, 1"] {
         assert!(g11.contains(want), "gfx1151 lacks `{want}`");
     }

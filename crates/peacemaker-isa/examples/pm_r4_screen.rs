@@ -4,7 +4,7 @@
 
 //! Offline R4 MoE schedule inventory: emit, assemble, lift and record resources.
 //! Run with --features toolchain and an evidence directory argument.
-use hipfire_isa::{Arch, kernels::qwen4_moe_sym::{self, Kind, Spec, R4Spec}, toolchain::{Toolchain, build}};
+use peacemaker_isa::{Arch, kernels::qwen4_moe_sym::{self, Kind, Spec, R4Spec}, toolchain::{Toolchain, build}};
 use serde_json::json;
 use std::{collections::BTreeMap, fs, path::PathBuf};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -47,12 +47,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 if peacemaker_lift::emit::module(&lifted.program)? != bytes { return Err(format!("{name}: lift identity differs").into()); }
                                 row["lift"] = json!("byte-exact");
                                 let symbol = &lifted.program.kernels[0].symbol.0;
-                                let routes = BTreeMap::from([(symbol.clone(), hipfire_isa::cost_lint::Route {
+                                let routes = BTreeMap::from([(symbol.clone(), peacemaker_isa::cost_lint::Route {
                                     rows: counts.clone(), tile_rows: 16, k128_epochs: Some(2), epoch_starts: BTreeMap::new(),
                                 })]);
-                                row["cost"] = serde_json::to_value(hipfire_isa::cost_lint::analyze(&lifted.program, &routes)?)?;
+                                row["cost"] = serde_json::to_value(peacemaker_isa::cost_lint::analyze(&lifted.program, &routes)?)?;
                                 if nt == 4 && prefetch && grouped && matches!(chains, 2 | 4) {
-                                    row["certification"] = hipfire_isa::pm_check::m7(&build.elf, arch.name(), symbol)?;
+                                    row["certification"] = peacemaker_isa::pm_check::m7(&build.elf, arch.name(), symbol)?;
                                 }
                                 row["elf"] = json!(build.elf);
                                 fs::write(root.join(format!("{name}.dis")), build.disassembly)?;

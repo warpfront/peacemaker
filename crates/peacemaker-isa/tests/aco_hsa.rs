@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaden Schutt
 // hipfire — see LICENSE and NOTICE in the project root.
 
-//! CPU gate of the ACO→HSA adapter (`hipfire_isa::aco_hsa`), no GPU and no ROCm tool.
+//! CPU gate of the ACO→HSA adapter (`peacemaker_isa::aco_hsa`), no GPU and no ROCm tool.
 //!
 //! The raw shader is a small gfx1201 program in the shape of the pilot (RADV entry: a 64-bit
 //! pointer in `s[0:1]`, a push constant in `s2`, `ttmp9` work-group id, packed `v0`), encoded by
@@ -17,13 +17,13 @@
 //!   each with the causal error class, never a permissive emit;
 //! * the static import chain (artifact.json → files → rawspec/sidecar/binary/SPIR-V) refuses a
 //!   tampered file, a missing entry and missing provenance.
-use hipfire_isa::aco_cert::{certify_program, CertError, IdentityDomain, LaunchContract};
-use hipfire_isa::aco_hsa::{
+use peacemaker_isa::aco_cert::{certify_program, CertError, IdentityDomain, LaunchContract};
+use peacemaker_isa::aco_hsa::{
     adapt_to_hsa, verify_artifact_dir, AcoError, AcoHipContract, AcoHsaEmission, Aperture, BindingSource, EntryBinding, HipArg, HipArgKind,
     ShapeDomain, CANDIDATE_SCHEMA,
 };
-use hipfire_isa::native;
-use hipfire_isa::plan::Access;
+use peacemaker_isa::native;
+use peacemaker_isa::plan::Access;
 use peacemaker_ir::codec::gfx12;
 use peacemaker_ir::inst::{
     Abi, Arch, Axis, EntryFact, EntryLoc, EntryValue, ExecExtent, FpState, Frontend, LocalIdField, RawKernelSpec, RawResources,
@@ -325,7 +325,7 @@ fn native_link_of_encoded_words_matches_the_text_assembler() {
         ("exception_fp_ieee_overflow", "0"), ("exception_fp_ieee_underflow", "0"), ("exception_fp_ieee_inexact", "0"), ("exception_int_div_zero", "0"),
     ].iter().map(|(n, v)| (format!(".amdhsa_{n}"), (*v).to_owned())).collect();
     let yaml = "amdhsa.kernels:\n  - .args:\n      - \n        .name: p\n        .offset: 0\n        .size: 8\n        .value_kind: by_value\n    .group_segment_fixed_size: 0\n    .kernarg_segment_align: 8\n    .kernarg_segment_size: 8\n    .max_flat_workgroup_size: 32\n    .name: k\n    .private_segment_fixed_size: 0\n    .sgpr_count: 8\n    .sgpr_spill_count: 0\n    .symbol: k.kd\n    .uniform_work_group_size: 1\n    .uses_dynamic_stack: false\n    .vgpr_count: 8\n    .vgpr_spill_count: 0\n    .wavefront_size: 32\n    .workgroup_processor_mode: 1\namdhsa.target: amdgcn-amd-amdhsa--gfx1201\namdhsa.version: [1, 2]\n";
-    let linked = native::link_encoded(&[native::EncodedKernel { symbol: "k", words: &words, directives: &directives }], yaml, hipfire_isa::Arch::Gfx1201).expect("link");
+    let linked = native::link_encoded(&[native::EncodedKernel { symbol: "k", words: &words, directives: &directives }], yaml, peacemaker_isa::Arch::Gfx1201).expect("link");
     let mut source = String::from(".amdgcn_target \"amdgcn-amd-amdhsa--gfx1201\"\n.amdhsa_code_object_version 6\n.text\n.protected k\n.globl k\n.p2align 8\n.type k,@function\nk:\n");
     for line in BODY { source.push_str(&format!("\t{}\n", line.replace("s_cbranch_scc1 6", "s_cbranch_scc1 .Lend"))) }
     source.push_str(".Lend:\n\ts_endpgm\n.Lk_end:\n.size k, .Lk_end-k\n.section .rodata,\"a\",@progbits\n.p2align 6\n.amdhsa_kernel k\n");
@@ -336,7 +336,7 @@ fn native_link_of_encoded_words_matches_the_text_assembler() {
     source.push_str(".end_amdhsa_kernel\n.text\n.amdgpu_metadata\n---\n");
     source.push_str(yaml);
     source.push_str("...\n.end_amdgpu_metadata\n");
-    let assembled = native::assemble(&source, hipfire_isa::Arch::Gfx1201).expect("assemble");
+    let assembled = native::assemble(&source, peacemaker_isa::Arch::Gfx1201).expect("assemble");
     assert_eq!(linked, assembled);
 }
 

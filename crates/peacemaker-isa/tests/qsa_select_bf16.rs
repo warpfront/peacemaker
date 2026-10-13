@@ -5,8 +5,8 @@
 //! QSA selector BF16-pooled score module (gfx1151): the single symbol
 //! `indexed_attention_select_scores_rows16_bf16_pm_gfx1151` in module
 //! `qsa_select_bf16_pm_gfx1151`. The F32 pair module is untouched.
-use hipfire_isa::Arch;
-use hipfire_isa::kernels::{qsa_score, qsa_select::{self, Kind, Spec}};
+use peacemaker_isa::Arch;
+use peacemaker_isa::kernels::{qsa_score, qsa_select::{self, Kind, Spec}};
 
 #[macro_use]
 #[path = "support/rocm.rs"]
@@ -18,7 +18,7 @@ const HOST: &str = "host-x86_64-unknown-linux-gnu-";
 const SYMBOL: &str = "indexed_attention_select_scores_rows16_bf16_pm_gfx1151";
 const MODULE: &str = "qsa_select_bf16_pm_gfx1151";
 
-fn bf16() -> (Vec<hipfire_isa::Emitted>, String, hipfire_isa::kernels::iu4_gemm::ModuleProof) {
+fn bf16() -> (Vec<peacemaker_isa::Emitted>, String, peacemaker_isa::kernels::iu4_gemm::ModuleProof) {
     qsa_select::emit_module_bf16(ARCH).unwrap()
 }
 
@@ -76,8 +76,8 @@ fn f32_pair_module_is_unchanged() {
     assert!(text.contains("indexed_attention_select_scores_rows16_f32_pm_gfx1151:"));
     assert!(text.contains("indexed_attention_select_from_scores_pm_gfx1151:"));
     let committed = std::fs::read(format!("{}/../../kernels/{}.hxaco", env!("CARGO_MANIFEST_DIR"), qsa_select::module(ARCH))).unwrap();
-    let elf = hipfire_isa::native::assemble(&text, ARCH).unwrap();
-    assert!(hipfire_isa::native::bundle(&elf, ARCH, HOST) == committed, "F32 pair: fresh emission differs from the committed bundle");
+    let elf = peacemaker_isa::native::assemble(&text, ARCH).unwrap();
+    assert!(peacemaker_isa::native::bundle(&elf, ARCH, HOST) == committed, "F32 pair: fresh emission differs from the committed bundle");
 }
 
 /// Kernarg ABI of the score kernel: pointer/scalar offsets, 52 bytes.
@@ -152,14 +152,14 @@ fn committed_bundle_equals_fresh_native_emission() {
     let path = format!("{}/../../kernels/{MODULE}.hxaco", env!("CARGO_MANIFEST_DIR"));
     let committed = std::fs::read(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
     let text = bf16().1;
-    let elf = hipfire_isa::native::assemble(&text, ARCH).unwrap();
-    assert!(hipfire_isa::native::bundle(&elf, ARCH, HOST) == committed, "{path}: fresh emission differs from the committed bundle");
+    let elf = peacemaker_isa::native::assemble(&text, ARCH).unwrap();
+    assert!(peacemaker_isa::native::bundle(&elf, ARCH, HOST) == committed, "{path}: fresh emission differs from the committed bundle");
 }
 
 #[cfg(feature = "toolchain")]
 mod toolchain {
     use super::*;
-    use hipfire_isa::{ledger_replay, pm_check, toolchain::{build, certify, Toolchain}};
+    use peacemaker_isa::{ledger_replay, pm_check, toolchain::{build, certify, Toolchain}};
 
     /// The single symbol certifies: parse-back, independent wait replay, the
     /// committed BF16 shape contract, and M7's lift identity plus
@@ -173,7 +173,7 @@ mod toolchain {
         let _ = require_rocm_tool!("llvm-readobj");
         let (emitted, text, _) = bf16();
         for e in &emitted { ledger_replay::replay_waits(&e.s_text, ARCH).unwrap(); }
-        let dir = std::env::temp_dir().join(format!("hipfire-isa-qsa-select-bf16-cert-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("peacemaker-isa-qsa-select-bf16-cert-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let s = dir.join("module.s");
         std::fs::write(&s, &text).unwrap();
@@ -195,6 +195,6 @@ mod toolchain {
     fn no_lds_accesses() {
         let e = qsa_select::emit(Spec { arch: ARCH, kind: Kind::ScoreBf16 }).unwrap();
         assert!(!e.s_text.lines().any(|l| l.trim_start().starts_with("ds_")), "score uses no LDS");
-        assert_eq!(hipfire_isa::pm_check::lds_bounds(&e.s_text, SYMBOL, 8, 0).unwrap(), 0);
+        assert_eq!(peacemaker_isa::pm_check::lds_bounds(&e.s_text, SYMBOL, 8, 0).unwrap(), 0);
     }
 }

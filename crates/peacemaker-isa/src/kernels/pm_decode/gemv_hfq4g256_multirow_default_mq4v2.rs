@@ -356,7 +356,7 @@ mod tests {
         let object = crate::native::assemble(&emitted.s_text, Arch::Gfx1201)
             .expect("native region code object");
         let out = std::env::temp_dir()
-            .join(format!("hipfire-isa-g0-multirow_default-{}", std::process::id()));
+            .join(format!("peacemaker-isa-g0-multirow_default-{}", std::process::id()));
         std::fs::create_dir_all(&out).unwrap();
         let prefix = out.join(format!("{MODULE}.g0"));
         std::fs::write(prefix.with_extension("g0.s"), &emitted.s_text).unwrap();

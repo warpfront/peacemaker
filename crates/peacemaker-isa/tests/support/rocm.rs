@@ -10,8 +10,8 @@ pub fn hipcc() -> PathBuf { root().join("bin/hipcc") }
 pub fn llvm_bin_dir() -> PathBuf { root().join("lib/llvm/bin") }
 pub fn silu_golden(gfx1100: bool) -> &'static str {
     match (resolver::clang_major().expect("detecting ROCm oracle toolchain"), gfx1100) {
-        (23, false) => hipfire_isa::kernels::iu4_gemm::region::SILU_GOLDEN,
-        (23, true) => hipfire_isa::kernels::iu4_gemm::region::SILU_GOLDEN_GFX1100,
+        (23, false) => peacemaker_isa::kernels::iu4_gemm::region::SILU_GOLDEN,
+        (23, true) => peacemaker_isa::kernels::iu4_gemm::region::SILU_GOLDEN_GFX1100,
         (24, false) => include_str!("../../kernels/iu4_gemm.silu.clang24.region.s"),
         (24, true) => include_str!("../../kernels/iu4_v2c.gfx1100.silu.clang24.region.s"),
         (major, _) => panic!("unsupported ROCm clang major {major}: regenerate and commit toolchain-keyed SiLU oracle goldens"),

@@ -7,8 +7,8 @@
 //! scope (the rest of the block that created the workgroup).
 
 use crate::interp::{Cx, R};
-use hipfire_isa::insn::Instruction;
-use hipfire_isa::{Arch, Builder};
+use peacemaker_isa::insn::Instruction;
+use peacemaker_isa::{Arch, Builder};
 use peacemaker_author::runtime::{Arrived, Breaks, Cond, Driver, Exit, Forward, Phase, Place, RegionId, RingId, Transition, WgCond};
 use peacemaker_author::{Gfx1100, Gfx1151, Gfx1201, Target};
 

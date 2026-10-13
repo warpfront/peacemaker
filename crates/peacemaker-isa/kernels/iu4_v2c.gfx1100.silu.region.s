@@ -5,7 +5,7 @@
 ;  device ELF sha256 5b9bf3dda9f1f3732f89411e6d22cbc85492fc785da3f0b1db491ba5276a2036).
 ; Lane masks renamed to SGPRs (VOP3 compare/select forms); hazard/issue waits are placed by the builder.
 ; Inputs: v91 = g (gate accumulator), v90 = u (up accumulator). Output: last definition.
-; Regenerate and compare with `hipfire-isa region-import --arch gfx1100 --disassembly <objdump.txt>`.
+; Regenerate and compare with `peacemaker-isa region-import --arch gfx1100 --disassembly <objdump.txt>`.
 v_mul_f32_e32 v0, 0xbfb8aa3b, v91
 v_cmp_nlt_f32_e64 s0, 0x42ce8ed0, v91
 v_rndne_f32_e32 v3, v0

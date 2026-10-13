@@ -55,7 +55,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
 /// Adapter identity recorded in the emission proof and the candidate manifest.
-pub const ADAPTER_VERSION: &str = concat!("hipfire-isa ", env!("CARGO_PKG_VERSION"), " aco-hsa adapter v1");
+pub const ADAPTER_VERSION: &str = concat!("peacemaker-isa ", env!("CARGO_PKG_VERSION"), " aco-hsa adapter v1");
 /// Schema of [`AcoHipContract::from_json`].
 pub const CONTRACT_SCHEMA: &str = "pm-aco-hip-contract-v1";
 /// Schema of [`AcoHsaEmission::candidate_manifest`].

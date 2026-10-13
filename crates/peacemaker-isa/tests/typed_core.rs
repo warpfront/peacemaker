@@ -10,10 +10,10 @@
 //! `Forward` targets reached from several branches, loop heads reached from
 //! the entry and the back edge) keeps the waits and hazard guards of every
 //! path into it.
-use hipfire_isa::{Arch, Builder, KernelSpec, KernargLayout, RegPlan};
-use hipfire_isa::insn::{Instruction, MemoryClass};
-use hipfire_isa::lds::Transition;
-use hipfire_isa::reg::{Kind, Live, RegRef};
+use peacemaker_isa::{Arch, Builder, KernelSpec, KernargLayout, RegPlan};
+use peacemaker_isa::insn::{Instruction, MemoryClass};
+use peacemaker_isa::lds::Transition;
+use peacemaker_isa::reg::{Kind, Live, RegRef};
 use peacemaker_author::{Gfx1100, Gfx1151, Gfx1201, Ring, Target, Workgroup, prime, retire, rotate};
 
 fn probe(arch: Arch) -> Builder {

@@ -3,8 +3,8 @@
 // hipfire — see LICENSE and NOTICE in the project root.
 
 //! Qwen4 symmetric IU4 MoE builder family (gfx1151 + gfx1201).
-use hipfire_isa::Arch;
-use hipfire_isa::kernels::qwen4_moe_sym::{self, Kind, Spec};
+use peacemaker_isa::Arch;
+use peacemaker_isa::kernels::qwen4_moe_sym::{self, Kind, Spec};
 #[macro_use]
 #[path = "support/rocm.rs"]
 mod rocm;
@@ -67,7 +67,7 @@ fn committed_bundles_equal_fresh_emission() {
 
 fn link(text: &str, arch: &str, stem: &str) -> Vec<u8> {
     use std::process::Command;
-    let dir = std::env::temp_dir().join(format!("hipfire-isa-q4s-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("peacemaker-isa-q4s-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let (s, o, co) = (dir.join(format!("{stem}.s")), dir.join(format!("{stem}.o")), dir.join(format!("{stem}.co")));
     std::fs::write(&s, text).unwrap();
@@ -97,7 +97,7 @@ fn text_section(bytes: &[u8]) -> Vec<u8> {
 #[cfg(feature = "toolchain")]
 mod toolchain {
     use super::*;
-    use hipfire_isa::{ledger_replay, pm_check, toolchain::{build, certify, Toolchain}};
+    use peacemaker_isa::{ledger_replay, pm_check, toolchain::{build, certify, Toolchain}};
 
     /// Every symbol of both modules certifies: parse-back, independent wait
     /// replay, its committed shape contract, and M7's lift identity plus
@@ -112,7 +112,7 @@ mod toolchain {
         for arch in ARCHES {
             let (emitted, text, _) = qwen4_moe_sym::emit_module(arch).unwrap();
             for e in &emitted { ledger_replay::replay_waits(&e.s_text, arch).unwrap(); }
-            let dir = std::env::temp_dir().join(format!("hipfire-isa-q4s-cert-{}-{}", arch.name(), std::process::id()));
+            let dir = std::env::temp_dir().join(format!("peacemaker-isa-q4s-cert-{}-{}", arch.name(), std::process::id()));
             std::fs::create_dir_all(&dir).unwrap();
             let s = dir.join("module.s");
             std::fs::write(&s, &text).unwrap();

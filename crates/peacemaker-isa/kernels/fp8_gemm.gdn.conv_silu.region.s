@@ -2,7 +2,7 @@
 ; hipcc --genco --offload-arch=gfx1201 -O3 --no-offload-compress -ffp-contract=off (the rdna-compute recipe for this module),
 ; AMD clang version 23.0.0git (https://github.com/ROCm/llvm-project.git 8f497e0992fb7513f7f78a6f6b6f1056c375e961).
 ; Lifted with peacemaker-lift from /home/kaden/qcal/perf/fp8-4k5/gdnprep-fuse/kill/prep_cache.hsaco (sha256 b2b10a2fd241fcdef8c6309799e3d5e0204d9efa6fad189d8ac0a694f50e501a); region `conv_silu`.
-; Regenerate/compare: `hipfire-isa region-import --gdn-object <object>` (feature `lift`).
+; Regenerate/compare: `peacemaker-isa region-import --gdn-object <object>` (feature `lift`).
 ; inputs: w2=v46 win2=v13 w3=v44 cur=v17 w1=v42 win1=v9 w0=v18 win0=v5
 ; outputs: out=v2
 v_mul_f32_e32 v27, v13, v46

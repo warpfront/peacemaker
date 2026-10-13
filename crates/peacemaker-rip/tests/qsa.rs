@@ -1,11 +1,11 @@
-use hipfire_isa::{Arch, kernels::qsa_gather::{self, Kind, Spec}, pm_check,
+use peacemaker_isa::{Arch, kernels::qsa_gather::{self, Kind, Spec}, pm_check,
     toolchain::{build, oracle_assemble_link_bundle, Toolchain}};
 use std::{fs, path::PathBuf};
 
-#[path = "../../hipfire-isa/tests/support/native_compare.rs"]
+#[path = "../../peacemaker-isa/tests/support/native_compare.rs"]
 mod native_compare;
 
-const SOURCE: &str = include_str!("../../hipfire-isa/src/kernels/qsa_gather.rip");
+const SOURCE: &str = include_str!("../../peacemaker-isa/src/kernels/qsa_gather.rip");
 
 #[test]
 fn standalone_qsa_matches_rust_and_shipped_objects() {
@@ -16,7 +16,7 @@ fn standalone_qsa_matches_rust_and_shipped_objects() {
     let tools = Toolchain { host_target: "host-x86_64-unknown-linux-gnu-".into(), ..Toolchain::oracle() };
     for arch in [Arch::Gfx1151, Arch::Gfx1201] {
         let (rust, rust_text, rust_proof) = qsa_gather::emit_module(arch).unwrap();
-        let (rip, rip_text, rip_proof) = hipfire_rip::module(SOURCE, arch,
+        let (rip, rip_text, rip_proof) = peacemaker_rip::module(SOURCE, arch,
             &["convert", "attend"], &Spec::module(arch)).unwrap();
         assert_eq!(rip_text, rust_text, "{} assembly", arch.name());
         assert_eq!(serde_json::to_value(&rip_proof).unwrap(), serde_json::to_value(&rust_proof).unwrap(),
@@ -64,9 +64,9 @@ fn race_twins_and_escape_seams_are_rejected() {
     ];
     for arch in [Arch::Gfx1151, Arch::Gfx1201] {
         for (name, source, fixed) in fixtures {
-            let corrected = hipfire_rip::compile(fixed, arch, "negative").unwrap_or_else(|e| panic!("{name} fixed: {e}"));
+            let corrected = peacemaker_rip::compile(fixed, arch, "negative").unwrap_or_else(|e| panic!("{name} fixed: {e}"));
             assert!(corrected.s_text.contains(if arch.gfx12() { "s_barrier_signal" } else { "s_barrier" }) || name == "loop_carried_undrained_store");
-            let error = hipfire_rip::compile(source, arch, "negative").err().expect(name);
+            let error = peacemaker_rip::compile(source, arch, "negative").err().expect(name);
             println!("PASS {} {name}: negative rejected ({error}); fixed control emitted successfully", arch.name());
         }
     }

@@ -84,7 +84,7 @@ impl Variant {
     /// Every variant, in emission order.
     pub const ALL: [Variant; 2] = [Variant::Ep2, Variant::N4];
 
-    /// The `hipfire-isa emit --kernel` name.
+    /// The `peacemaker-isa emit --kernel` name.
     pub fn kernel_id(self) -> &'static str {
         match self {
             Variant::Ep2 => "ep_gather_grouped_rows_by_tile_owner_pm",
@@ -276,7 +276,7 @@ fn copy_tile(wg: &mut Wg) -> R {
 }
 
 /// Shape contract of one emitted variant (the `--shape` input of
-/// `hipfire-isa emit --co`): exact counts of the memory and control mnemonics
+/// `peacemaker-isa emit --co`): exact counts of the memory and control mnemonics
 /// the kernel is allowed, the forbidden families and the resource limits.
 pub fn contract(variant: Variant, arch: Arch, e: &Emitted) -> serde_json::Value {
     let mut counts = serde_json::Map::new();

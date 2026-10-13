@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-use hipfire_isa::audit::{self, Options as AuditOptions};
-use hipfire_isa::toolchain::{build, certify, read_kd, IsaShapeContract, Toolchain};
+use peacemaker_isa::audit::{self, Options as AuditOptions};
+use peacemaker_isa::toolchain::{build, certify, read_kd, IsaShapeContract, Toolchain};
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::PathBuf;
@@ -80,10 +80,10 @@ fn usage() -> &'static str {
 /// The native build alone, spelled the way `toolchain::build` records it.
 fn run_native(args: impl Iterator<Item=String>) -> Result<(), String> {
     let (mut arch, mut source, mut co, mut bundle) = (None, None, None, None);
-    let mut host = hipfire_isa::native::DEFAULT_HOST_TARGET.to_owned();
+    let mut host = peacemaker_isa::native::DEFAULT_HOST_TARGET.to_owned();
     for arg in args {
         match arg.split_once('=') {
-            Some(("--arch", v)) => arch = Some(v.parse::<hipfire_isa::Arch>()?),
+            Some(("--arch", v)) => arch = Some(v.parse::<peacemaker_isa::Arch>()?),
             Some(("--co", v)) => co = Some(PathBuf::from(v)),
             Some(("--bundle", v)) => bundle = Some(PathBuf::from(v)),
             Some(("--host-target", v)) => host = v.to_owned(),
@@ -93,14 +93,14 @@ fn run_native(args: impl Iterator<Item=String>) -> Result<(), String> {
     }
     let (arch, source) = (arch.ok_or("missing --arch=")?, source.ok_or("missing source .s")?);
     let text = fs::read_to_string(&source).map_err(|e| format!("{}: {e}", source.display()))?;
-    let elf = hipfire_isa::native::assemble(&text, arch)?;
+    let elf = peacemaker_isa::native::assemble(&text, arch)?;
     if let Some(path) = &co { fs::write(path, &elf).map_err(|e| format!("{}: {e}", path.display()))? }
-    if let Some(path) = &bundle { fs::write(path, hipfire_isa::native::bundle(&elf, arch, &host)).map_err(|e| format!("{}: {e}", path.display()))? }
+    if let Some(path) = &bundle { fs::write(path, peacemaker_isa::native::bundle(&elf, arch, &host)).map_err(|e| format!("{}: {e}", path.display()))? }
     Ok(())
 }
 
 fn run_lint(mut args: impl Iterator<Item=String>) -> Result<(), String> {
-    use hipfire_isa::cost_lint::{self, Route};
+    use peacemaker_isa::cost_lint::{self, Route};
     use std::collections::BTreeMap;
     let path = args.next().ok_or_else(|| usage().to_owned())?;
     let mut routes = BTreeMap::<String, Route>::new();
@@ -124,7 +124,7 @@ fn run_lint(mut args: impl Iterator<Item=String>) -> Result<(), String> {
 /// rewrite, and assemble a separate object whose symbol carries the
 /// `__pm_profile` suffix. The output is never a production artifact.
 fn run_profile(mut args: impl Iterator<Item=String>) -> Result<(), String> {
-    use hipfire_isa::{ledger_replay::replay_hazards, profile};
+    use peacemaker_isa::{ledger_replay::replay_hazards, profile};
     let (mut arch, mut source, mut points, mut output) = (None, None, None, None);
     while let Some(option) = args.next() {
         let value = args.next().ok_or_else(|| format!("missing value for {option}"))?;
@@ -137,7 +137,7 @@ fn run_profile(mut args: impl Iterator<Item=String>) -> Result<(), String> {
         }
     }
     let arch = arch.ok_or("missing --arch")?;
-    let target: hipfire_isa::Arch = arch.parse()?;
+    let target: peacemaker_isa::Arch = arch.parse()?;
     let source_path = source.ok_or("missing --s")?;
     let output = output.ok_or("missing --out")?;
     let read = |p: &PathBuf| fs::read_to_string(p).map_err(|e| format!("{}: {e}", p.display()));

@@ -1,14 +1,14 @@
-//! `runtime::Driver` over the real `hipfire_isa::Builder`: a store that is
+//! `runtime::Driver` over the real `peacemaker_isa::Builder`: a store that is
 //! still outstanding on the skipped path of a `skip_if` must be drained by
 //! the driver's explicit `wait`, even though the body's path issued a
 //! younger store and retired both with a raw counter wait. `Trace` cannot
 //! show this (its raw instructions never touch its ledger), and the
 //! builder's own barrier repair would mask a missing wait, so the proof is
 //! the ledger *before* the publishing barrier.
-use hipfire_isa::insn::{Instruction, MemoryClass};
-use hipfire_isa::ledger::Counter;
-use hipfire_isa::reg::{Kind, Live, RegRef};
-use hipfire_isa::{Arch, Builder, KernargLayout, KernelSpec, RegPlan};
+use peacemaker_isa::insn::{Instruction, MemoryClass};
+use peacemaker_isa::ledger::Counter;
+use peacemaker_isa::reg::{Kind, Live, RegRef};
+use peacemaker_isa::{Arch, Builder, KernargLayout, KernelSpec, RegPlan};
 use peacemaker_author::runtime::{Driver, Phase, Transition};
 use peacemaker_author::{Gfx1151, Gfx1201, Target};
 

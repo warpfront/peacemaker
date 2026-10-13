@@ -6,8 +6,8 @@
 //! the stage-1 h twin and the stage-2 fused A4 epilogue): determinism, the
 //! per-K256 census of the retiled K loop, assembly, byte identity of the
 //! committed bundle and gfx11 certification.
-use hipfire_isa::Arch;
-use hipfire_isa::kernels::iu4_v2b_a4::{self, Epi, Spec};
+use peacemaker_isa::Arch;
+use peacemaker_isa::kernels::iu4_v2b_a4::{self, Epi, Spec};
 use std::io::Write;
 use std::process::{Command, Stdio};
 
@@ -15,7 +15,7 @@ use std::process::{Command, Stdio};
 #[path = "support/rocm.rs"]
 mod rocm;
 
-fn twin(epi: Epi) -> hipfire_isa::Emitted { iu4_v2b_a4::emit(Spec { arch: Arch::Gfx1151, epi }).unwrap() }
+fn twin(epi: Epi) -> peacemaker_isa::Emitted { iu4_v2b_a4::emit(Spec { arch: Arch::Gfx1151, epi }).unwrap() }
 
 #[test]
 fn m512_entries_are_deterministic_and_gfx1151_only() {
@@ -65,14 +65,14 @@ fn committed_a4_bundle_equals_fresh_native_emission() {
     let path = format!("{}/../../kernels/{}.hxaco", env!("CARGO_MANIFEST_DIR"), iu4_v2b_a4::MODULE);
     let committed = std::fs::read(&path).unwrap();
     let text = iu4_v2b_a4::emit_module(Arch::Gfx1151).unwrap().1;
-    let elf = hipfire_isa::native::assemble(&text, Arch::Gfx1151).unwrap();
-    assert!(hipfire_isa::native::bundle(&elf, Arch::Gfx1151, hipfire_isa::native::DEFAULT_HOST_TARGET) == committed, "{path}: fresh emission differs");
+    let elf = peacemaker_isa::native::assemble(&text, Arch::Gfx1151).unwrap();
+    assert!(peacemaker_isa::native::bundle(&elf, Arch::Gfx1151, peacemaker_isa::native::DEFAULT_HOST_TARGET) == committed, "{path}: fresh emission differs");
 }
 
 #[cfg(feature = "toolchain")]
 mod toolchain {
     use super::*;
-    use hipfire_isa::{ledger_replay, pm_check, toolchain::{build, Toolchain}};
+    use peacemaker_isa::{ledger_replay, pm_check, toolchain::{build, Toolchain}};
 
     #[test]
     fn m512_entries_pass_gfx1151_certification_checks() {
@@ -83,7 +83,7 @@ mod toolchain {
         let _ = require_rocm_tool!("llvm-readobj");
         let (_, text, _) = iu4_v2b_a4::emit_module(Arch::Gfx1151).unwrap();
         ledger_replay::replay_waits(&text, Arch::Gfx1151).unwrap();
-        let dir = std::env::temp_dir().join(format!("hipfire-isa-v2b-a4-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("peacemaker-isa-v2b-a4-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let s = dir.join("v2b_a4.s");
         std::fs::write(&s, &text).unwrap();

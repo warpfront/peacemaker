@@ -6,8 +6,8 @@
 //! `IsaShapeContract` of every product point, the 192-VGPR occupancy
 //! ceiling, deterministic emission, the loop wait-ledger fix point, the
 //! imported SiLU region, and assembly of every emitted module.
-use hipfire_isa::Arch;
-use hipfire_isa::kernels::iu4_gemm::{self, ALayout, Cacc, Epi, Fold, Spec, Tile, region::{self, Region}};
+use peacemaker_isa::Arch;
+use peacemaker_isa::kernels::iu4_gemm::{self, ALayout, Cacc, Epi, Fold, Spec, Tile, region::{self, Region}};
 use serde_json::Value;
 use std::io::Write;
 use std::process::{Command, Stdio};
@@ -110,7 +110,7 @@ fn every_module_assembles_with_zero_diagnostics() {
 fn module_waits_pass_independent_replay() {
     for (tile, act, _) in POINTS {
         let (_, text, _) = iu4_gemm::emit_module(Fold::K128, tile, Cacc::One, act, Arch::Gfx1201).unwrap();
-        hipfire_isa::ledger_replay::replay_waits(&text, Arch::Gfx1201).unwrap_or_else(|e| panic!("{tile:?} {act:?}: {e}"));
+        peacemaker_isa::ledger_replay::replay_waits(&text, Arch::Gfx1201).unwrap_or_else(|e| panic!("{tile:?} {act:?}: {e}"));
     }
 }
 

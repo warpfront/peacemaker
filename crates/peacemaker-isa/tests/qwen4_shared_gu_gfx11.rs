@@ -7,8 +7,8 @@
 //! the hipcc four-launch chain. Layout, mask and exchange behaviour is checked
 //! on the peacemaker CPU interpreter; the hipcc-ISA op correspondence of the
 //! activation is pinned by `activation_sequence_matches_the_hipcc_isa`.
-use hipfire_isa::Arch;
-use hipfire_isa::kernels::qwen4_shared_gu_gfx11::{self, Spec};
+use peacemaker_isa::Arch;
+use peacemaker_isa::kernels::qwen4_shared_gu_gfx11::{self, Spec};
 #[macro_use]
 #[path = "support/rocm.rs"]
 mod rocm;
@@ -80,7 +80,7 @@ fn committed_bundles_equal_fresh_emission() {
 
 fn link(text: &str, arch: &str, stem: &str) -> Vec<u8> {
     use std::process::Command;
-    let dir = std::env::temp_dir().join(format!("hipfire-isa-shgu-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("peacemaker-isa-shgu-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let (s, o, co) = (dir.join(format!("{stem}.s")), dir.join(format!("{stem}.o")), dir.join(format!("{stem}.co")));
     std::fs::write(&s, text).unwrap();
@@ -167,7 +167,7 @@ fn run_grid(wr: u8, i: usize, k: usize, n: usize, seed: u64) -> (Vec<u16>, Vec<f
     use peacemaker_ir::emu::{Emulator, Launch, Memory};
     let spec = Spec { arch: ARCH, wr };
     let text = qwen4_shared_gu_gfx11::emit(spec).unwrap().s_text;
-    let elf = hipfire_isa::native::assemble(&text, ARCH).unwrap();
+    let elf = peacemaker_isa::native::assemble(&text, ARCH).unwrap();
     let lifted = peacemaker_lift::lift_object(&elf, peacemaker_lift::Options { frontend: peacemaker_ir::inst::Frontend::Builder }).unwrap();
     let emu = Emulator::new(&lifted.program, &spec.symbol()).unwrap();
     let mut rng = Rng(seed | 1);
@@ -272,7 +272,7 @@ fn activation_sequence_matches_the_hipcc_isa() {
 #[cfg(feature = "toolchain")]
 mod toolchain {
     use super::*;
-    use hipfire_isa::{ledger_replay, pm_check, toolchain::{build, certify, Toolchain}};
+    use peacemaker_isa::{ledger_replay, pm_check, toolchain::{build, certify, Toolchain}};
 
     /// Every symbol of the module certifies: parse-back, independent wait
     /// replay, its committed shape contract (counts, registers, 20480 fixed
@@ -289,7 +289,7 @@ mod toolchain {
         let (emitted, text, _) = qwen4_shared_gu_gfx11::emit_module(ARCH).unwrap();
         assert_eq!(emitted.len(), ENTRIES.len());
         for e in &emitted { ledger_replay::replay_waits(&e.s_text, ARCH).unwrap(); }
-        let dir = std::env::temp_dir().join(format!("hipfire-isa-shgu-cert-{}-{}", ARCH.name(), std::process::id()));
+        let dir = std::env::temp_dir().join(format!("peacemaker-isa-shgu-cert-{}-{}", ARCH.name(), std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let s = dir.join("module.s");
         std::fs::write(&s, &text).unwrap();

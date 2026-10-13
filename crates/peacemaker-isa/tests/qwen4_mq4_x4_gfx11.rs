@@ -6,8 +6,8 @@
 //! W8 regions and W8 HC-write): exact twins of the hipcc MQ4 route
 //! (`gemm_mq4g256v2_residual_wmma_gfx11_bt4`), the MQ6 builder over the
 //! 136-byte MQ4G256V2 group.
-use hipfire_isa::Arch;
-use hipfire_isa::kernels::qwen4_mq4_x4_gfx11::{self, Kind, Spec};
+use peacemaker_isa::Arch;
+use peacemaker_isa::kernels::qwen4_mq4_x4_gfx11::{self, Kind, Spec};
 #[macro_use]
 #[path = "support/rocm.rs"]
 mod rocm;
@@ -96,7 +96,7 @@ fn kernarg_abi_matches_hipcc_metadata() {
 /// epilogue are shared.
 #[test]
 fn mq4_entries_differ_from_mq6_in_weight_format_and_dequant_form() {
-    use hipfire_isa::kernels::qwen4_mq6_x4_gfx11 as mq6;
+    use peacemaker_isa::kernels::qwen4_mq6_x4_gfx11 as mq6;
     let count = |text: &str, pat: &str| text.lines().filter(|l| l.trim_start().starts_with(pat)).count();
     let stride = |text: &str, imm: &str| text.lines().any(|l| l.trim().starts_with("s_mul_i32") && l.trim().ends_with(&format!(", {imm}")));
     for (wr, kind) in Spec::ALL {
@@ -144,7 +144,7 @@ fn committed_bundles_equal_fresh_emission() {
 
 fn link(text: &str, arch: &str, stem: &str) -> Vec<u8> {
     use std::process::Command;
-    let dir = std::env::temp_dir().join(format!("hipfire-isa-mq4x4g11-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("peacemaker-isa-mq4x4g11-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let (s, o, co) = (dir.join(format!("{stem}.s")), dir.join(format!("{stem}.o")), dir.join(format!("{stem}.co")));
     std::fs::write(&s, text).unwrap();
@@ -180,7 +180,7 @@ fn contract_path(symbol: &str) -> String {
 #[cfg(feature = "toolchain")]
 mod toolchain {
     use super::*;
-    use hipfire_isa::{ledger_replay, pm_check, toolchain::{build, certify, Toolchain}};
+    use peacemaker_isa::{ledger_replay, pm_check, toolchain::{build, certify, Toolchain}};
 
     /// Every symbol of the module certifies: parse-back, independent wait
     /// replay, its committed shape contract (counts, registers, 40960 fixed
@@ -197,7 +197,7 @@ mod toolchain {
         let (emitted, text, _) = qwen4_mq4_x4_gfx11::emit_module(ARCH).unwrap();
         assert_eq!(emitted.len(), ENTRIES.len());
         for e in &emitted { ledger_replay::replay_waits(&e.s_text, ARCH).unwrap(); }
-        let dir = std::env::temp_dir().join(format!("hipfire-isa-mq4x4g11-cert-{}-{}", ARCH.name(), std::process::id()));
+        let dir = std::env::temp_dir().join(format!("peacemaker-isa-mq4x4g11-cert-{}-{}", ARCH.name(), std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let s = dir.join("module.s");
         std::fs::write(&s, &text).unwrap();

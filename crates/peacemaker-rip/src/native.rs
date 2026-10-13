@@ -1,6 +1,6 @@
 //! Native vocabulary of the evaluator: the generic builder objects
 //! (`KernelSpec`, `KernargLayout`, `RegPlan`, `Builder`, `Instruction`), the
-//! shared kernel helpers of `hipfire_isa::kernels::common`, the `Chain`
+//! shared kernel helpers of `peacemaker_isa::kernels::common`, the `Chain`
 //! emission builtin, and the typed-core surface (`Workgroup` / `Wave`
 //! methods, `Ring`, `ready` / `retire` / ...) lowered onto the sealed
 //! runtime driver. Everything else a script calls is evaluated script code.
@@ -8,11 +8,11 @@
 use crate::driver::DynDriver;
 use crate::interp::{Cx, Ctl, Interp, R};
 use crate::value::*;
-use hipfire_isa::insn::{Instruction, MemoryClass};
-use hipfire_isa::kernels::common;
-use hipfire_isa::ledger::Counter;
-use hipfire_isa::reg::{Kind as RegKind, Live, RegRef};
-use hipfire_isa::{Arch, Builder, Emitted, KernargLayout, KernelSpec, RegPlan};
+use peacemaker_isa::insn::{Instruction, MemoryClass};
+use peacemaker_isa::kernels::common;
+use peacemaker_isa::ledger::Counter;
+use peacemaker_isa::reg::{Kind as RegKind, Live, RegRef};
+use peacemaker_isa::{Arch, Builder, Emitted, KernargLayout, KernelSpec, RegPlan};
 use peacemaker_author::runtime::{Arrived, Cond, Exit, Phase, Place, RegionId, RingId, Transition, WgCond};
 use std::cell::RefCell;
 use std::rc::Rc;

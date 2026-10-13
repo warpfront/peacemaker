@@ -4,7 +4,7 @@
 ;  defines IU4_SYMMETRIC_FOLD=1 IU4_G12_RASTER=1, hipcc --genco --offload-arch=gfx1201 -O3,
 ;  AMD clang version 23.0.0git (https://github.com/ROCm/llvm-project.git 8f497e0992fb7513f7f78a6f6b6f1056c375e961), device ELF sha256 f0672fd64ab06920b1c5e40f9de29c4ba0982aae0696cd9f2a325a510f443973).
 ; Inputs: v162 = g (gate accumulator), v164 = u (up accumulator). Output: last definition.
-; Regenerate and compare with `hipfire-isa region-import --disassembly <objdump.txt>`.
+; Regenerate and compare with `peacemaker-isa region-import --disassembly <objdump.txt>`.
 v_dual_mul_f32 v8, 0xbfb8aa3b, v162
 v_cmp_nlt_f32_e64 s14, 0x42ce8ed0, v162
 v_cmp_ngt_f32_e64 s15, 0xc2b17218, v162

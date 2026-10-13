@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaden Schutt
 // hipfire — see LICENSE and NOTICE in the project root.
 
-use hipfire_isa::{Arch,RegPlan,reg::{Live,V,Vb,Vp,RegRef,Kind},vopd::{self,VopdOp,VopdF32,Operand},insn::{Instruction,Vbuffer,MemoryClass,Sop,Ds},hazard::{Gfx12Sgpr,Pipeline},ledger::{Ledger,Counter}};
+use peacemaker_isa::{Arch,RegPlan,reg::{Live,V,Vb,Vp,RegRef,Kind},vopd::{self,VopdOp,VopdF32,Operand},insn::{Instruction,Vbuffer,MemoryClass,Sop,Ds},hazard::{Gfx12Sgpr,Pipeline},ledger::{Ledger,Counter}};
 use std::{io::Write,process::{Command,Stdio}};
 #[macro_use]
 #[path = "support/rocm.rs"]
@@ -13,11 +13,11 @@ mod rocm;
 #[test]fn sgpr_hazard_tracks_only_valu_read_pairs(){let mut h=Gfx12Sgpr::default();let s=|base|RegRef{kind:Kind::S,base,len:1};assert!(h.step(Pipeline::Salu,&[],&[s(10)],false,false).is_empty());assert!(h.step(Pipeline::Vmem,&[s(10)],&[],false,false).is_empty());assert!(h.step(Pipeline::Valu,&[s(10)],&[],false,false).is_empty());assert!(h.step(Pipeline::Salu,&[],&[s(10)],false,false).is_empty());assert_eq!(h.step(Pipeline::Salu,&[s(10)],&[],false,false),["depctr_sa_sdst(0)"]);assert!(h.step(Pipeline::Valu,&[],&[s(10)],false,false).is_empty());assert_eq!(h.step(Pipeline::Valu,&[s(10)],&[],false,false),["depctr_va_sdst(0)"]);h.step(Pipeline::Salu,&[],&[s(10)],false,false);h.step(Pipeline::Smem,&[],&[],false,false);assert!(h.step(Pipeline::Valu,&[s(10)],&[],false,false).is_empty())}
 #[test]fn ledger_retains_partial_load_and_ds_waits(){let r=|base|RegRef{kind:Kind::V,base,len:1};let mut ledger=Ledger::default();for n in [7,79,91,83]{ledger.record(Arch::Gfx1201,&Instruction::new("global_load_b32",vec![r(n)],vec![]).memory(MemoryClass::VmemLoad))}for (n,expected) in [(7,3),(79,2),(91,1),(83,0)]{let req=ledger.required(&Instruction::new("v_xor",vec![r(100)],vec![r(n)]));assert_eq!(req[0].0,Counter::Load);assert_eq!(req[0].1,expected);ledger.wait(Counter::Load,expected)}for n in [71,75,79]{ledger.record(Arch::Gfx1201,&Instruction::new("ds_load_b64",vec![r(n)],vec![]).memory(MemoryClass::DsLoad))}let req=ledger.required(&Instruction::new("v_wmma",vec![r(3)],vec![r(75)]));assert_eq!(req[0].0,Counter::Ds);assert_eq!(req[0].1,1);ledger.wait(Counter::Ds,1);let req=ledger.required(&Instruction::new("v_wmma",vec![r(3)],vec![r(79)]));assert_eq!(req[0].1,0)}
 #[test]fn reg_lifetimes_and_budget(){let mut p=RegPlan::new(8,8).unwrap();p.v::<4>("a",0,Live::Whole).unwrap();assert!(p.v::<2>("alias",2,Live::Whole).is_err());assert!(p.v::<8>("too_large",2,Live::Whole).is_err());assert!(p.s::<4>("srd",2,Live::Whole).is_err())}
-#[test]fn assembler_golden_tables(){let mc=require_rocm_tool!("llvm-mc");for (arch,file,table) in [("gfx1201",include_str!("golden/gfx1201.txt"),hipfire_isa::insn::GFX1201_GOLDEN),("gfx1100",include_str!("golden/gfx1100.txt"),hipfire_isa::insn::GFX1100_GOLDEN)]{let lines:Vec<_>=file.lines().collect();assert_eq!(lines,table);let mut child=Command::new(&mc).args(["-triple=amdgcn-amd-amdhsa",&format!("-mcpu={arch}"),"-show-encoding"]).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().unwrap();child.stdin.take().unwrap().write_all(file.as_bytes()).unwrap();let output=child.wait_with_output().unwrap();assert!(output.status.success(),"{arch}: {}",String::from_utf8_lossy(&output.stderr));let text=String::from_utf8(output.stdout).unwrap();assert_eq!(text.matches("encoding: [").count(),lines.len(),"{arch} output:\n{text}")}}
+#[test]fn assembler_golden_tables(){let mc=require_rocm_tool!("llvm-mc");for (arch,file,table) in [("gfx1201",include_str!("golden/gfx1201.txt"),peacemaker_isa::insn::GFX1201_GOLDEN),("gfx1100",include_str!("golden/gfx1100.txt"),peacemaker_isa::insn::GFX1100_GOLDEN)]{let lines:Vec<_>=file.lines().collect();assert_eq!(lines,table);let mut child=Command::new(&mc).args(["-triple=amdgcn-amd-amdhsa",&format!("-mcpu={arch}"),"-show-encoding"]).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().unwrap();child.stdin.take().unwrap().write_all(file.as_bytes()).unwrap();let output=child.wait_with_output().unwrap();assert!(output.status.success(),"{arch}: {}",String::from_utf8_lossy(&output.stderr));let text=String::from_utf8(output.stdout).unwrap();assert_eq!(text.matches("encoding: [").count(),lines.len(),"{arch} output:\n{text}")}}
 
 #[test]
 fn lds_slot_publication_and_split_barrier() {
-    use hipfire_isa::lds::{Lds, SlotState, Transition};
+    use peacemaker_isa::lds::{Lds, SlotState, Transition};
     let mut lds = Lds::default();
     let a = lds.add("A0", 0, 1024).unwrap();
     assert!(lds.load(a).is_err());
@@ -87,7 +87,7 @@ fn mixed_memory_families_and_gfx11_lgkm_force_zero_wait() {
 
 #[test]
 fn builder_combines_simultaneous_load_and_ds_waits() {
-    use hipfire_isa::{Builder, KernelSpec, KernargLayout};
+    use peacemaker_isa::{Builder, KernelSpec, KernargLayout};
     let mut plan = RegPlan::new(8, 8).unwrap();
     let value = plan.v::<1>("value", 0, Live::Whole).unwrap();
     let loaded = plan.v::<1>("loaded", 1, Live::Whole).unwrap();
@@ -111,7 +111,7 @@ fn builder_combines_simultaneous_load_and_ds_waits() {
 
 #[test]
 fn wmma_to_wmma_ab_dependency_inserts_nop() {
-    use hipfire_isa::{Builder, KernelSpec, KernargLayout};
+    use peacemaker_isa::{Builder, KernelSpec, KernargLayout};
     let mut plan = RegPlan::new(32, 8).unwrap();
     let first = plan.v::<8>("first", 0, Live::Whole).unwrap();
     let a = plan.v::<2>("a", 8, Live::Whole).unwrap();
@@ -137,7 +137,7 @@ fn wmma_to_wmma_ab_dependency_inserts_nop() {
 
 #[test]
 fn workgroup_id_abi_tracks_user_sgpr_count() {
-    use hipfire_isa::arch::WgIdSource;
+    use peacemaker_isa::arch::WgIdSource;
     let gfx12 = Arch::Gfx1201.workgroup_ids(14).unwrap();
     assert_eq!((gfx12.x, gfx12.y), (WgIdSource::Ttmp9, WgIdSource::Ttmp7));
     let gfx11 = Arch::Gfx1100.workgroup_ids(14).unwrap();
@@ -147,7 +147,7 @@ fn workgroup_id_abi_tracks_user_sgpr_count() {
 
 #[test]
 fn global_visibility_is_explicit_not_implied_by_lds_barrier() {
-    use hipfire_isa::{Builder, KernelSpec, KernargLayout, MemoryScope};
+    use peacemaker_isa::{Builder, KernelSpec, KernargLayout, MemoryScope};
     let spec = KernelSpec {
         kernel_id: "barrier_probe".into(), variant: "default".into(), arch: Arch::Gfx1201,
         symbol: "barrier_probe".into(), kernargs: KernargLayout::new(8),
@@ -165,7 +165,7 @@ fn global_visibility_is_explicit_not_implied_by_lds_barrier() {
 
 #[test]
 fn gfx11_trans_use_is_gfx1100_only_and_vmem_sgpr_needs_no_nop() {
-    use hipfire_isa::hazard::{Gfx11Hazards, Pipeline};
+    use peacemaker_isa::hazard::{Gfx11Hazards, Pipeline};
     let v = |base| RegRef { kind: Kind::V, base, len: 1 };
     let s = |base| RegRef { kind: Kind::S, base, len: 1 };
     let mut gfx1100 = Gfx11Hazards::for_arch(Arch::Gfx1100);
@@ -182,8 +182,8 @@ fn gfx11_trans_use_is_gfx1100_only_and_vmem_sgpr_needs_no_nop() {
 #[test]
 fn typed_instruction_families_encode_on_both_architectures() {
     let llvm_mc = require_rocm_tool!("llvm-mc");
-    use hipfire_isa::insn::{Wmma, Smem, Global, Vop1};
-    use hipfire_isa::reg::S;
+    use peacemaker_isa::insn::{Wmma, Smem, Global, Vop1};
+    use peacemaker_isa::reg::S;
     for arch in [Arch::Gfx1201, Arch::Gfx1100, Arch::Gfx1151] {
         let instructions = [
             Wmma::iu4(arch, V::<8>(0), V::<2>(8), V::<2>(10), None),
@@ -207,7 +207,7 @@ fn typed_instruction_families_encode_on_both_architectures() {
 #[test]
 fn hip_hidden_kernarg_metadata_assembles() {
     let llvm_mc = require_rocm_tool!("llvm-mc");
-    use hipfire_isa::{Builder, KernelSpec, KernargLayout};
+    use peacemaker_isa::{Builder, KernelSpec, KernargLayout};
     let spec = KernelSpec {
         kernel_id: "metadata_probe".into(), variant: "default".into(), arch: Arch::Gfx1201,
         symbol: "metadata_probe".into(),
@@ -229,7 +229,7 @@ fn hip_hidden_kernarg_metadata_assembles() {
 #[test]
 fn gfx11_descriptor_extras_assemble() {
     let llvm_mc = require_rocm_tool!("llvm-mc");
-    use hipfire_isa::{Builder, KernelSpec, KernargLayout};
+    use peacemaker_isa::{Builder, KernelSpec, KernargLayout};
     for arch in [Arch::Gfx1100, Arch::Gfx1151] {
         let spec = KernelSpec {
             kernel_id: "descriptor_probe".into(), variant: "default".into(), arch,

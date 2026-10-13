@@ -6,8 +6,8 @@
 //! kernarg ABI and launch bounds of every export, determinism, exact-arch
 //! gating, the committed bundle's identity with fresh native emission, and
 //! (feature `toolchain`) M7 on every export of the linked object.
-use hipfire_isa::Arch;
-use hipfire_isa::kernels::qwen4_lane_rows::{self, KERNARGS, KERNARG_BYTES, MODULE, SYMBOLS, WORKGROUP_SIZE};
+use peacemaker_isa::Arch;
+use peacemaker_isa::kernels::qwen4_lane_rows::{self, KERNARGS, KERNARG_BYTES, MODULE, SYMBOLS, WORKGROUP_SIZE};
 
 const ARCH: Arch = Arch::Gfx1151;
 
@@ -78,8 +78,8 @@ fn kernarg_abi_and_launch_bounds_match_the_contract() {
 #[test]
 fn module_assembles_natively() {
     let (_, text, _) = qwen4_lane_rows::emit_module().unwrap();
-    let elf = hipfire_isa::native::assemble(&text, ARCH).unwrap();
-    let bundle = hipfire_isa::native::bundle(&elf, ARCH, hipfire_isa::native::DEFAULT_HOST_TARGET);
+    let elf = peacemaker_isa::native::assemble(&text, ARCH).unwrap();
+    let bundle = peacemaker_isa::native::bundle(&elf, ARCH, peacemaker_isa::native::DEFAULT_HOST_TARGET);
     assert!(bundle.len() > elf.len());
 }
 
@@ -88,17 +88,17 @@ fn module_assembles_natively() {
 #[test]
 fn committed_bundle_equals_fresh_emission() {
     let path = format!("{}/../../kernels/{}", env!("CARGO_MANIFEST_DIR"), qwen4_lane_rows::bundle_name());
-    let committed = std::fs::read(&path).unwrap_or_else(|e| panic!("{path}: {e} (emit it: hipfire-isa emit --kernel qwen4_lane_rows --arch gfx1151 ...)"));
+    let committed = std::fs::read(&path).unwrap_or_else(|e| panic!("{path}: {e} (emit it: peacemaker-isa emit --kernel qwen4_lane_rows --arch gfx1151 ...)"));
     let (_, text, _) = qwen4_lane_rows::emit_module().unwrap();
-    let elf = hipfire_isa::native::assemble(&text, ARCH).unwrap();
-    let fresh = hipfire_isa::native::bundle(&elf, ARCH, hipfire_isa::native::DEFAULT_HOST_TARGET);
+    let elf = peacemaker_isa::native::assemble(&text, ARCH).unwrap();
+    let fresh = peacemaker_isa::native::bundle(&elf, ARCH, peacemaker_isa::native::DEFAULT_HOST_TARGET);
     assert!(committed == fresh, "{MODULE}: fresh emission differs from the committed bundle {path}");
 }
 
 #[cfg(feature = "toolchain")]
 mod toolchain {
     use super::*;
-    use hipfire_isa::{ledger_replay, pm_check};
+    use peacemaker_isa::{ledger_replay, pm_check};
 
     /// Every export's waits replay independently, and M7 lifts the linked
     /// object byte-exactly with no outstanding obligations.
@@ -106,10 +106,10 @@ mod toolchain {
     fn every_export_passes_wait_replay_and_m7() {
         let (emitted, text, _) = qwen4_lane_rows::emit_module().unwrap();
         for e in &emitted { ledger_replay::replay_waits(&e.s_text, ARCH).unwrap(); }
-        let dir = std::env::temp_dir().join(format!("hipfire-isa-lane-rows-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("peacemaker-isa-lane-rows-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let co = dir.join("module.co");
-        std::fs::write(&co, hipfire_isa::native::assemble(&text, ARCH).unwrap()).unwrap();
+        std::fs::write(&co, peacemaker_isa::native::assemble(&text, ARCH).unwrap()).unwrap();
         for symbol in SYMBOLS {
             let m7 = pm_check::m7(&co, ARCH.name(), symbol).unwrap_or_else(|e| panic!("{symbol}: {e}"));
             assert_eq!((m7["lift"].as_str(), &m7["obligations"]), (Some("byte-exact"), &serde_json::json!({})), "{symbol}");

@@ -7,7 +7,7 @@
 //! with an address (lane byte index) and a data VGPR use, counts on the DS
 //! queue, carries no LDS slot, and must pass the native writer and M7.
 #![cfg(feature = "toolchain")]
-use hipfire_isa::{insn::{Instruction, MemoryClass}, ledger::Counter, reg::Live, Arch, Builder, KernargLayout, KernelSpec, RegPlan};
+use peacemaker_isa::{insn::{Instruction, MemoryClass}, ledger::Counter, reg::Live, Arch, Builder, KernargLayout, KernelSpec, RegPlan};
 
 const BPERMUTE16: &str = "ds_bpermute_b32 v2, v0, v1 offset:64";
 /// llvm-objdump's canonical spelling of swizzle offset 527 (and 0x0f, or 0x10):
@@ -15,10 +15,10 @@ const BPERMUTE16: &str = "ds_bpermute_b32 v2, v0, v1 offset:64";
 const SWIZZLE16: &str = "ds_swizzle_b32 v2, v1 offset:swizzle(BITMASK_PERM,\"1pppp\")";
 
 /// `out[lane] = in[src(lane)]` through one checked crosslane exchange.
-fn probe(crosslane: &str, with_wait: bool) -> Result<hipfire_isa::Emitted, String> {
+fn probe(crosslane: &str, with_wait: bool) -> Result<peacemaker_isa::Emitted, String> {
     probe_with(crosslane, with_wait, KernargLayout::new(16).pointer("in", 0).pointer("out", 8))
 }
-fn probe_with(crosslane: &str, with_wait: bool, kernargs: KernargLayout) -> Result<hipfire_isa::Emitted, String> {
+fn probe_with(crosslane: &str, with_wait: bool, kernargs: KernargLayout) -> Result<peacemaker_isa::Emitted, String> {
     let mut regs = RegPlan::new(8, 8)?;
     let lane = regs.v::<1>("lane", 0, Live::Whole)?;
     let data = regs.v::<1>("data", 1, Live::Whole)?;
@@ -41,18 +41,18 @@ fn probe_with(crosslane: &str, with_wait: bool, kernargs: KernargLayout) -> Resu
     b.finish()
 }
 
-fn assemble_and_m7(e: &hipfire_isa::Emitted, tag: &str) -> serde_json::Value {
+fn assemble_and_m7(e: &peacemaker_isa::Emitted, tag: &str) -> serde_json::Value {
     assert_eq!(e.proof.lds_slots.len(), 0, "a crosslane exchange carries no LDS slot");
-    let elf = hipfire_isa::native::assemble(&e.s_text, Arch::Gfx1201).expect("native assemble");
+    let elf = peacemaker_isa::native::assemble(&e.s_text, Arch::Gfx1201).expect("native assemble");
     let dir = std::path::Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("crosslane-{tag}-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join("bpermute_probe.co");
     std::fs::write(&path, &elf).unwrap();
-    let summary = hipfire_isa::pm_check::m7(&path, "gfx1201", "bpermute_probe").expect("M7 obligations {}");
+    let summary = peacemaker_isa::pm_check::m7(&path, "gfx1201", "bpermute_probe").expect("M7 obligations {}");
     eprintln!("M7 {tag} {summary}");
     assert_eq!(summary["obligations"], serde_json::json!({}));
     assert_eq!(summary["ambiguous_delays"], 0);
-    hipfire_isa::ledger_replay::replay_waits(&e.s_text, Arch::Gfx1201).expect("independent wait replay");
+    peacemaker_isa::ledger_replay::replay_waits(&e.s_text, Arch::Gfx1201).expect("independent wait replay");
     std::fs::remove_dir_all(&dir).ok();
     summary
 }
@@ -72,8 +72,8 @@ fn bitmask_perm_swizzle_is_canonical_and_m7_clean() {
     assert!(canonical.s_text.contains(SWIZZLE16));
     assemble_and_m7(&canonical, "swizzle");
     let numeric = probe("ds_swizzle_b32 v2, v1 offset:527", true).expect("numeric swizzle");
-    let elf_c = hipfire_isa::native::assemble(&canonical.s_text, Arch::Gfx1201).unwrap();
-    let elf_n = hipfire_isa::native::assemble(&numeric.s_text, Arch::Gfx1201).unwrap();
+    let elf_c = peacemaker_isa::native::assemble(&canonical.s_text, Arch::Gfx1201).unwrap();
+    let elf_n = peacemaker_isa::native::assemble(&numeric.s_text, Arch::Gfx1201).unwrap();
     assert_eq!(elf_c.len(), elf_n.len());
     let word = 0xd8d4020fu32.to_le_bytes();
     assert!(elf_c.windows(4).any(|w| w == word), "canonical form encodes offset 527");
@@ -90,11 +90,11 @@ fn bpermute_result_is_never_read_before_its_ds_wait() {
             let after = e.s_text.split("ds_bpermute_b32").nth(1).unwrap();
             let store = after.find("global_store_b32").unwrap();
             assert!(after[..store].contains("s_wait_dscnt"), "{}", &after[..store]);
-            hipfire_isa::ledger_replay::replay_waits(&e.s_text, Arch::Gfx1201).unwrap();
+            peacemaker_isa::ledger_replay::replay_waits(&e.s_text, Arch::Gfx1201).unwrap();
         }
     }
     // The replay itself refuses a read of the exchange result before the DS wait.
-    assert!(hipfire_isa::ledger_replay::replay_waits("ds_bpermute_b32 v2, v0, v1 offset:64\nv_add_f32_e32 v3, v2, v2\n", Arch::Gfx1201).is_err());
+    assert!(peacemaker_isa::ledger_replay::replay_waits("ds_bpermute_b32 v2, v0, v1 offset:64\nv_add_f32_e32 v3, v2, v2\n", Arch::Gfx1201).is_err());
 }
 
 #[test]
@@ -117,7 +117,7 @@ fn crosslane_still_refuses_lds_memory_forms() {
 /// a plain pointer's metadata text is unchanged.
 #[test]
 fn pointer_actual_access_metadata() {
-    use hipfire_isa::plan::Access;
+    use peacemaker_isa::plan::Access;
     let plain = probe(BPERMUTE16, true).unwrap();
     assert!(!plain.s_text.contains(".actual_access"));
     assert!(plain.s_text.contains("      - .address_space: global\n        .name: in\n"));
@@ -127,7 +127,7 @@ fn pointer_actual_access_metadata() {
     assert!(e.s_text.contains("      - .actual_access: write_only\n        .address_space: global\n        .name: out\n"));
     let summary = assemble_and_m7(&e, "access");
     assert_eq!(summary["obligations"], serde_json::json!({}));
-    let elf = hipfire_isa::native::assemble(&e.s_text, Arch::Gfx1201).unwrap();
+    let elf = peacemaker_isa::native::assemble(&e.s_text, Arch::Gfx1201).unwrap();
     // Golden against a real hipcc (clang) gfx1201 object: the NT_AMDGPU_METADATA
     // MessagePack of an access-annotated pointer arg is the same key/value byte
     // run in both: fixstr `.actual_access`, fixstr value, then `.address_space: global`.

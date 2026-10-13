@@ -450,7 +450,7 @@ fn sample<T: Target>(w: &mut Wave<'_, T, Builder>, a: Arch, tag: &str) -> Result
 }
 
 /// Shape contract of the emitted kernel (the `--shape` input of
-/// `hipfire-isa emit --co`): exact counts of the memory and control mnemonics
+/// `peacemaker-isa emit --co`): exact counts of the memory and control mnemonics
 /// the kernel is allowed, the forbidden families and the resource limits.
 pub fn contract(arch: Arch, e: &Emitted) -> serde_json::Value {
     let mut counts = serde_json::Map::new();

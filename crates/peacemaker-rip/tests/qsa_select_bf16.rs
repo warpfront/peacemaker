@@ -1,11 +1,11 @@
-use hipfire_isa::{Arch, kernels::{iu4_gemm, qsa_score, qsa_select::{self, Kind, Spec}}, pm_check,
+use peacemaker_isa::{Arch, kernels::{iu4_gemm, qsa_score, qsa_select::{self, Kind, Spec}}, pm_check,
     toolchain::{build, oracle_assemble_link_bundle, Toolchain}};
 use std::{fs, path::PathBuf};
 
-#[path = "../../hipfire-isa/tests/support/native_compare.rs"]
+#[path = "../../peacemaker-isa/tests/support/native_compare.rs"]
 mod native_compare;
 
-const SCORE_BF16: &str = include_str!("../../hipfire-isa/src/kernels/qsa_score_bf16.rip");
+const SCORE_BF16: &str = include_str!("../../peacemaker-isa/src/kernels/qsa_score_bf16.rip");
 
 /// The standalone BF16-pooled score RIP source reproduces the Rust emitter's
 /// assembly, BuilderProof and single-symbol ModuleProof, native code object
@@ -19,9 +19,9 @@ fn standalone_qsa_select_bf16_matches_rust_and_shipped_objects() {
     let tools = Toolchain { host_target: "host-x86_64-unknown-linux-gnu-".into(), ..Toolchain::oracle() };
     let arch = Arch::Gfx1151;
     for other in [Arch::Gfx1100, Arch::Gfx1201] {
-        assert!(hipfire_rip::compile(SCORE_BF16, other, "score-bf16").is_err(), "{other:?}");
+        assert!(peacemaker_rip::compile(SCORE_BF16, other, "score-bf16").is_err(), "{other:?}");
     }
-    let rip = vec![hipfire_rip::compile(SCORE_BF16, arch, "score-bf16").unwrap()];
+    let rip = vec![peacemaker_rip::compile(SCORE_BF16, arch, "score-bf16").unwrap()];
     let (rip_text, rip_proof) = iu4_gemm::module(&rip, &qsa_select::module_bf16(arch)).unwrap();
     let (rust, rust_text, rust_proof) = qsa_select::emit_module_bf16(arch).unwrap();
     assert_eq!((rip.len(), rust.len()), (1, 1), "single symbol");

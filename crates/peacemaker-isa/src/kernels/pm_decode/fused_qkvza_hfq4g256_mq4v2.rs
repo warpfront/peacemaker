@@ -460,7 +460,7 @@ mod tests {
     fn g0_quad_m7() -> Result<(), String> {
         let emitted = super::build_g0()?;
         let root = std::env::temp_dir()
-            .join(format!("hipfire-isa-g0-qkvza-{}", std::process::id()));
+            .join(format!("peacemaker-isa-g0-qkvza-{}", std::process::id()));
         std::fs::create_dir_all(&root).map_err(|e| e.to_string())?;
         let base = root.join("fused_qkvza_hfq4g256_mq4v2.g0");
         std::fs::write(base.with_extension("g0.s"), &emitted.s_text).map_err(|e| e.to_string())?;

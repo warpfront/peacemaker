@@ -424,7 +424,7 @@ mod tests {
     #[test]
     fn residual_dog_g0_m7() {
         let emitted=build_dog_g0().expect("checked DOG region");
-        let dir=std::env::temp_dir().join(format!("hipfire-isa-g0-residual-{}",std::process::id()));
+        let dir=std::env::temp_dir().join(format!("peacemaker-isa-g0-residual-{}",std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let source=dir.join("gemv_hfq4g256_residual_mq4v2.g0.s");
         let elf=dir.join("gemv_hfq4g256_residual_mq4v2.g0.co");

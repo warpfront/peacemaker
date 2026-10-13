@@ -6,7 +6,7 @@
 //! Rust model of the HIP twin law (`kernels/src/spec_sampling_cpu_ar_parallel.hip`). The model
 //! evaluates `expf` with `f32::exp`, so probabilities agree to a few ulps and every integer
 //! output (counts, token ids) must agree exactly; the hardware gate owns the bit-exact `expf`.
-use hipfire_isa::{Arch, kernels::spec_sampling_rows_pm as rows};
+use peacemaker_isa::{Arch, kernels::spec_sampling_rows_pm as rows};
 use peacemaker_ir::{emu::{Emulator, Launch, Memory}, inst::Frontend};
 
 const ARCHES: [Arch; 2] = [Arch::Gfx1151, Arch::Gfx1201];
@@ -101,7 +101,7 @@ fn model(l: &[f32], p: Policy) -> Row {
 
 fn run_kernel(arch: Arch, logits: &[f32], vocab: usize, rows_n: usize, p: Policy) -> Vec<Row> {
     let text = rows::emit(arch).unwrap().s_text;
-    let elf = hipfire_isa::native::assemble(&text, arch).unwrap();
+    let elf = peacemaker_isa::native::assemble(&text, arch).unwrap();
     let program = peacemaker_lift::lift_object(&elf, peacemaker_lift::Options { frontend: Frontend::Builder }).unwrap().program;
     let emulator = Emulator::new(&program, &rows::symbol(arch)).unwrap();
     let (lp, cp, ip, pp, kp) = (0x10_0000u64, 0x4000_0000u64, 0x4010_0000u64, 0x4020_0000u64, 0x4030_0000u64);

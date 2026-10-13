@@ -445,7 +445,7 @@ mod tests {
         let emitted = build_g0().expect("checked G0 emission");
         let e = &emitted[0];
         let root = std::env::temp_dir()
-            .join(format!("hipfire-isa-g0-fused_qkv-{}", std::process::id()));
+            .join(format!("peacemaker-isa-g0-fused_qkv-{}", std::process::id()));
         std::fs::create_dir_all(&root).unwrap();
         let path = |suffix: &str| root.join(format!("{MODULE}.g0.{suffix}"));
         std::fs::write(path("s"), &e.s_text).unwrap();

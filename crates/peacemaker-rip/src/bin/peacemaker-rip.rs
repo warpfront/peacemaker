@@ -1,8 +1,8 @@
-//! `rip`: compile a `.rip` kernel script to AMDGCN assembly without cargo.
+//! `peacemaker-rip`: compile a `.rip` kernel script to AMDGCN assembly without cargo.
 //!
 //! ```text
-//! rip [--certify] SOURCE.rip ARCH VARIANT OUTPUT.s
-//! rip [--certify] --module SOURCE.rip ARCH VARIANT[,VARIANT..] MODULE_NAME OUTPUT.s
+//! peacemaker-rip [--certify] SOURCE.rip ARCH VARIANT OUTPUT.s
+//! peacemaker-rip [--certify] --module SOURCE.rip ARCH VARIANT[,VARIANT..] MODULE_NAME OUTPUT.s
 //! ```
 //!
 //! `ARCH` is `gfx1151`, `gfx1201`, `gfx1100` or `both` (gfx1151 and gfx1201;
@@ -14,12 +14,12 @@
 //! to reproduce a committed `.hxaco` recipe configure the library's
 //! `Toolchain` instead.
 
-use hipfire_isa::Arch;
+use peacemaker_isa::Arch;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 fn usage() -> ExitCode {
-    eprintln!("usage: rip [--certify] SOURCE.rip ARCH VARIANT OUTPUT.s\n       rip [--certify] --module SOURCE.rip ARCH VARIANT[,VARIANT..] MODULE_NAME OUTPUT.s");
+    eprintln!("usage: peacemaker-rip [--certify] SOURCE.rip ARCH VARIANT OUTPUT.s\n       peacemaker-rip [--certify] --module SOURCE.rip ARCH VARIANT[,VARIANT..] MODULE_NAME OUTPUT.s");
     ExitCode::from(2)
 }
 
@@ -54,12 +54,12 @@ fn run() -> Result<(), String> {
     for arch in arches {
         let (emitted, text, name) = if module {
             let variants: Vec<&str> = args[2].split(',').collect();
-            let (emitted, text, _) = hipfire_rip::module_named(&source, &args[0], arch, &variants, &args[3])?;
+            let (emitted, text, _) = peacemaker_rip::module_named(&source, &args[0], arch, &variants, &args[3])?;
             (emitted, text, args[3].clone())
         } else {
-            let e = hipfire_rip::compile_named(&source, &args[0], arch, &args[2])?;
+            let e = peacemaker_rip::compile_named(&source, &args[0], arch, &args[2])?;
             let text = e.s_text.clone();
-            let name = hipfire_rip::symbol_of(&e)?;
+            let name = peacemaker_rip::symbol_of(&e)?;
             (vec![e], text, name)
         };
         let out = out_path(&args[want - 1], arch, many);
@@ -69,7 +69,7 @@ fn run() -> Result<(), String> {
             #[cfg(feature = "certify")]
             {
                 let dir = std::env::var_os("RIP_CERT_DIR").map(PathBuf::from).unwrap_or_else(|| std::env::temp_dir().join(format!("rip-cert-{}-{}", std::process::id(), arch.name())));
-                for c in hipfire_rip::certify(&emitted, &text, arch, &name, &dir)? {
+                for c in peacemaker_rip::certify(&emitted, &text, arch, &name, &dir)? {
                     eprintln!("certified {} ({}): lift {}, obligations {}", c.symbol, arch.name(), c.m7["lift"], c.m7["obligations"]);
                 }
             }

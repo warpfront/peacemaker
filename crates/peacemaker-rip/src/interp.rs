@@ -43,8 +43,8 @@ impl<'a> From<&str> for Ctl<'a> {
 /// forward / break handles of the enclosing control-flow callbacks.
 pub struct Cx<'c> {
     pub d: Option<&'c mut (dyn DynDriver + 'c)>,
-    pub fwd: Option<&'c mut peacemaker_author::runtime::Forward<hipfire_isa::Builder>>,
-    pub brk: Option<&'c peacemaker_author::runtime::Breaks<hipfire_isa::Builder>>,
+    pub fwd: Option<&'c mut peacemaker_author::runtime::Forward<peacemaker_isa::Builder>>,
+    pub brk: Option<&'c peacemaker_author::runtime::Breaks<peacemaker_isa::Builder>>,
 }
 impl<'c> Cx<'c> {
     pub fn root() -> Self {

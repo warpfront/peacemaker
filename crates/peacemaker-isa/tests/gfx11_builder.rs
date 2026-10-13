@@ -5,12 +5,12 @@
 //! gfx11 builder target: counter waits, LDS barrier drain, VOPD pairing, the
 //! V2C-equivalent SET/ADD/gate-up kernels (gfx1100), the V2B module
 //! (gfx1151), and byte identity of the committed builder products.
-use hipfire_isa::{Arch, Builder, KernelSpec, KernargLayout, RegPlan};
-use hipfire_isa::insn::{Instruction, MemoryClass};
-use hipfire_isa::kernels::{iu4_gemm, iu4_v2b, iu4_v2c, fp8_gemm};
-use hipfire_isa::lds::Transition;
-use hipfire_isa::reg::Live;
-use hipfire_isa::vopd::{Operand, VopdF32, VopdOp};
+use peacemaker_isa::{Arch, Builder, KernelSpec, KernargLayout, RegPlan};
+use peacemaker_isa::insn::{Instruction, MemoryClass};
+use peacemaker_isa::kernels::{iu4_gemm, iu4_v2b, iu4_v2c, fp8_gemm};
+use peacemaker_isa::lds::Transition;
+use peacemaker_isa::reg::Live;
+use peacemaker_isa::vopd::{Operand, VopdF32, VopdOp};
 use std::io::Write;
 use std::process::{Command, Stdio};
 
@@ -27,7 +27,7 @@ fn probe(arch: Arch) -> Builder {
         user_sgpr_count: 2, system_sgpr_workgroup_id_y: false, workgroup_size: 64, group_segment_fixed_size: 0, wave32: true, cu_mode: false,
     }, plan)
 }
-fn v(n: u8) -> hipfire_isa::reg::RegRef { hipfire_isa::V::<1>(n).reg() }
+fn v(n: u8) -> peacemaker_isa::reg::RegRef { peacemaker_isa::V::<1>(n).reg() }
 
 #[test]
 fn gfx11_lds_barrier_drains_pending_stores_first() {
@@ -46,8 +46,8 @@ fn gfx11_combines_vm_and_lgkm_waits_into_one_s_waitcnt() {
     let slot = b.lds_slot("S", 0, 256).unwrap();
     b.ds_store(slot, Instruction::new("ds_store_b32 v2, v0", vec![], vec![v(2), v(0)]).memory(MemoryClass::DsStore)).unwrap();
     b.barrier(&[Transition::Ready(slot)]).unwrap();
-    b.push(Instruction::new("global_load_b32 v1, v2, s[0:1]", vec![v(1)], vec![v(2), hipfire_isa::S::<2>(0).reg()]).memory(MemoryClass::VmemLoad)).unwrap();
-    b.push(Instruction::new("global_load_b32 v5, v2, s[0:1] offset:4", vec![v(5)], vec![v(2), hipfire_isa::S::<2>(0).reg()]).memory(MemoryClass::VmemLoad)).unwrap();
+    b.push(Instruction::new("global_load_b32 v1, v2, s[0:1]", vec![v(1)], vec![v(2), peacemaker_isa::S::<2>(0).reg()]).memory(MemoryClass::VmemLoad)).unwrap();
+    b.push(Instruction::new("global_load_b32 v5, v2, s[0:1] offset:4", vec![v(5)], vec![v(2), peacemaker_isa::S::<2>(0).reg()]).memory(MemoryClass::VmemLoad)).unwrap();
     b.ds_load(slot, Instruction::new("ds_load_b32 v3, v2", vec![v(3)], vec![v(2)]).memory(MemoryClass::DsLoad)).unwrap();
     b.ds_load(slot, Instruction::new("ds_load_b32 v4, v2 offset:4", vec![v(4)], vec![v(2)]).memory(MemoryClass::DsLoad)).unwrap();
     // Needs the older VMEM load and the older DS load: vmcnt(1) lgkmcnt(1).
@@ -61,16 +61,16 @@ fn gfx11_combines_vm_and_lgkm_waits_into_one_s_waitcnt() {
 fn gfx11_vopd_halves_may_not_read_each_others_destination() {
     let x = VopdOp { op: VopdF32::Mul, dst: 8, src0: Operand::V(1), src1: 2 };
     let reads_x = VopdOp { op: VopdF32::Add, dst: 9, src0: Operand::Lit(0xcb40_0000), src1: 8 };
-    assert!(hipfire_isa::vopd::validate_pair(Arch::Gfx1100, x, reads_x).is_err());
-    assert!(hipfire_isa::vopd::validate_pair(Arch::Gfx1151, x, reads_x).is_err());
+    assert!(peacemaker_isa::vopd::validate_pair(Arch::Gfx1100, x, reads_x).is_err());
+    assert!(peacemaker_isa::vopd::validate_pair(Arch::Gfx1151, x, reads_x).is_err());
     // gfx12 pairing rules are unchanged.
-    assert!(hipfire_isa::vopd::validate_pair(Arch::Gfx1201, x, reads_x).is_ok());
+    assert!(peacemaker_isa::vopd::validate_pair(Arch::Gfx1201, x, reads_x).is_ok());
     let independent = VopdOp { op: VopdF32::Add, dst: 9, src0: Operand::Lit(0xcb40_0000), src1: 9 };
-    assert!(hipfire_isa::vopd::validate_pair(Arch::Gfx1100, x, independent).is_ok());
+    assert!(peacemaker_isa::vopd::validate_pair(Arch::Gfx1100, x, independent).is_ok());
 }
 
-fn v2c_epi(epi: iu4_v2c::Epi) -> hipfire_isa::Emitted { iu4_v2c::emit(iu4_v2c::Spec { arch: Arch::Gfx1100, epi }).unwrap() }
-fn v2c() -> hipfire_isa::Emitted { v2c_epi(iu4_v2c::Epi::Set) }
+fn v2c_epi(epi: iu4_v2c::Epi) -> peacemaker_isa::Emitted { iu4_v2c::emit(iu4_v2c::Spec { arch: Arch::Gfx1100, epi }).unwrap() }
+fn v2c() -> peacemaker_isa::Emitted { v2c_epi(iu4_v2c::Epi::Set) }
 
 #[test]
 fn v2c_is_deterministic_within_the_occupancy_ceiling() {
@@ -156,7 +156,7 @@ fn v2c_module_assembles_for_gfx1100_with_zero_diagnostics() {
 /// bytes, as for the gfx1201 golden.
 #[test]
 fn gfx1100_silu_region_matches_fresh_hipcc_object() {
-    use hipfire_isa::kernels::iu4_gemm::region;
+    use peacemaker_isa::kernels::iu4_gemm::region;
     let bundler = require_rocm_tool!("clang-offload-bundler");
     let objdump = require_rocm_tool!("llvm-objdump");
     let hipcc = rocm::hipcc();
@@ -203,7 +203,7 @@ fn text_section(bytes: &[u8]) -> Vec<u8> {
 }
 
 fn link(text: &str, arch: &str, stem: &str) -> Vec<u8> {
-    let dir = std::env::temp_dir().join(format!("hipfire-isa-identity-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("peacemaker-isa-identity-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let (s, o, co) = (dir.join(format!("{stem}.s")), dir.join(format!("{stem}.o")), dir.join(format!("{stem}.co")));
     std::fs::write(&s, text).unwrap();
@@ -237,7 +237,7 @@ fn committed_gfx1201_bundles_equal_fresh_emission() {
     }
 }
 
-fn v2b(epi: iu4_v2b::Epi) -> hipfire_isa::Emitted { iu4_v2b::emit(iu4_v2b::Spec { arch: Arch::Gfx1151, epi }).unwrap() }
+fn v2b(epi: iu4_v2b::Epi) -> peacemaker_isa::Emitted { iu4_v2b::emit(iu4_v2b::Spec { arch: Arch::Gfx1151, epi }).unwrap() }
 
 #[test]
 fn v2b_entries_are_deterministic_and_gfx1151_only() {
@@ -298,7 +298,7 @@ fn committed_gfx1100_v2c_bundle_equals_fresh_emission() {
 #[cfg(feature = "toolchain")]
 mod toolchain {
     use super::*;
-    use hipfire_isa::{ledger_replay, pm_check, profile, toolchain::{build, Toolchain}};
+    use peacemaker_isa::{ledger_replay, pm_check, profile, toolchain::{build, Toolchain}};
 
     /// Every symbol of the product module certifies against its committed
     /// contract: parse-back, exact counts (the linker's inter-kernel
@@ -313,7 +313,7 @@ mod toolchain {
         let _ = require_rocm_tool!("llvm-readobj");
         let (emitted, text, _) = iu4_v2c::module(Arch::Gfx1100, &iu4_v2c::Epi::ALL).unwrap();
         for e in &emitted { ledger_replay::replay_waits(&e.s_text, Arch::Gfx1100).unwrap(); }
-        let dir = std::env::temp_dir().join(format!("hipfire-isa-v2c-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("peacemaker-isa-v2c-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let s = dir.join("v2c.s");
         std::fs::write(&s, &text).unwrap();
@@ -328,7 +328,7 @@ mod toolchain {
             assert_eq!((m7["lift"].as_str(), &m7["obligations"]), (Some("byte-exact"), &serde_json::json!({})), "{epi:?}");
             let path = format!("{}/kernels/iu4_v2c.gfx1100.{}.contract.json", env!("CARGO_MANIFEST_DIR"), epi.name());
             let contract = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
-            hipfire_isa::toolchain::certify(&toolchain, &build, &s, "gfx1100", &dir.join(format!("{}.manifest.json", epi.name())),
+            peacemaker_isa::toolchain::certify(&toolchain, &build, &s, "gfx1100", &dir.join(format!("{}.manifest.json", epi.name())),
                 Some(&contract), "test", "test").unwrap_or_else(|e| panic!("{epi:?}: {e}"));
         }
     }
@@ -342,7 +342,7 @@ mod toolchain {
         let _ = require_rocm_tool!("llvm-readobj");
         let (_, text, _) = iu4_v2b::emit_module(Arch::Gfx1151).unwrap();
         ledger_replay::replay_waits(&text, Arch::Gfx1151).unwrap();
-        let dir = std::env::temp_dir().join(format!("hipfire-isa-v2b-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("peacemaker-isa-v2b-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let s = dir.join("v2b.s");
         std::fs::write(&s, &text).unwrap();
